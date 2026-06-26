@@ -52,7 +52,7 @@ export async function valuationNode(state: AgentState): Promise<Partial<AgentSta
   let analysis = '';
   try {
     const llm = createLLM({ temperature: 0.3, maxTokens: 1000 });
-    if (!llm) throw new Error('LLM not available');
+
 
     const sym = state.company?.currency === 'INR' ? '₹' : '$';
     const prompt = isPrivate ? `You are a private equity valuation analyst.

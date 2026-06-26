@@ -66,7 +66,7 @@ export async function sentimentNode(state: AgentState): Promise<Partial<AgentSta
   let analysis = '';
   try {
     const llm = createLLM({ temperature: 0.4, maxTokens: 1000 });
-    if (!llm) throw new Error('LLM not available');
+
 
     const newsContext = state.newsItems.slice(0, 5).map(
       (n) => `- ${n.headline} (${n.source}, sentiment: ${n.sentiment > 0 ? 'positive' : n.sentiment < 0 ? 'negative' : 'neutral'})`

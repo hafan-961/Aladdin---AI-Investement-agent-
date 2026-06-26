@@ -76,10 +76,8 @@ export async function dataFetcherNode(state: AgentState): Promise<Partial<AgentS
       description: 'Private Enterprise'
     };
 
-    const llm = createLLM({ temperature: 0.2, maxTokens: 500 });
-    if (llm) {
-      try {
-        const response = await llm.invoke(`
+    try {
+      const response = await createLLM({ temperature: 0.2, maxTokens: 500 }).invoke(`
 You are a business research analyst. Given the search results about "${state.query}", determine:
 1. Does an actual, real company with the name "${state.query}" (or a very close spelling variation / official name) exist as a real business entity? Respond with exists: true or false.
    * Note: Generic terms, stock search phrases (like "adani stock"), or completely fictional/unrelated names should be marked as exists: false.
@@ -113,26 +111,23 @@ OR if it does not exist:
   "explanation": "..."
 }
 `);
-        const text = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
-        const cleanJson = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
-        const parsed = JSON.parse(cleanJson);
-        
-        if (parsed.exists === false) {
-          errors.push(parsed.explanation || `No company named "${state.query}" exists. Please correct the spelling or query name.`);
-          return {
-            errors: [...state.errors, ...errors],
-            status: 'error',
-          };
-        }
-        
-        privateProfile = { ...privateProfile, ...parsed };
-      } catch (err: any) {
-        // LLM failed (e.g. 401) — continue with search-based fallback profile
-        console.warn('[Fetcher] Private profile LLM failed, using search-based fallback:', err.message);
-        errors.push('LLM unavailable; using search-based profile estimation.');
+      const text = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+      const cleanJson = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+      const parsed = JSON.parse(cleanJson);
+      
+      if (parsed.exists === false) {
+        errors.push(parsed.explanation || `No company named "${state.query}" exists. Please correct the spelling or query name.`);
+        return {
+          errors: [...state.errors, ...errors],
+          status: 'error',
+        };
       }
-    } else {
-      console.log('[Fetcher] LLM not available, using search-based fallback for private company profile.');
+      
+      privateProfile = { ...privateProfile, ...parsed };
+    } catch (err: any) {
+      // LLM failed — continue with search-based fallback profile
+      console.warn('[Fetcher] Private profile LLM failed, using search-based fallback:', err.message);
+      errors.push('LLM unavailable; using search-based profile estimation.');
     }
 
     company = {

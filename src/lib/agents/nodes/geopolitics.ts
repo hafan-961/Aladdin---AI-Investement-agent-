@@ -58,7 +58,7 @@ export async function geopoliticsNode(state: AgentState): Promise<Partial<AgentS
 
   try {
     const llm = createLLM({ temperature: 0.3, maxTokens: 1200 });
-    if (!llm) throw new Error('LLM not available');
+
 
     const searchContext = searchResults.slice(0, 5).map(
       (s) => `- ${s.title}: ${s.content.slice(0, 200)}`

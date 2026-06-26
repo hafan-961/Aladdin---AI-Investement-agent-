@@ -6,7 +6,7 @@
 // ============================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ChatOpenAI } from '@langchain/openai';
+import { createLLM } from '@/lib/agents/llm';
 
 // Simple in-memory session store (would use Redis/DB in production)
 const sessions: Map<string, { messages: { role: string; content: string }[] }> = new Map();
@@ -46,12 +46,8 @@ Always be professional, cite specific data when possible, and reference Graham's
     // Generate response
     let reply = '';
     try {
-      const llm = new ChatOpenAI({
-        modelName: process.env.LLM_MODEL || 'gpt-4o-mini',
-        temperature: 0.5,
-        maxTokens: 800,
-        configuration: process.env.OPENAI_BASE_URL ? { baseURL: process.env.OPENAI_BASE_URL } : undefined,
-      });
+      const llm = createLLM({ temperature: 0.5, maxTokens: 800 });
+      if (!llm) throw new Error('LLM not available');
 
       const response = await llm.invoke(
         session.messages.map((m) => ({

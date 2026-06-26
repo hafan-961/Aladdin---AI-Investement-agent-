@@ -6,7 +6,7 @@
 // the investment thesis.
 // ============================================
 
-import { ChatOpenAI } from '@langchain/openai';
+import { createLLM } from '../llm';
 import type { AgentState, GeopoliticsAnalysis } from '../state';
 import { searchWeb } from '../../api/search';
 
@@ -57,12 +57,8 @@ export async function geopoliticsNode(state: AgentState): Promise<Partial<AgentS
   let opportunities: string[] = [];
 
   try {
-    const llm = new ChatOpenAI({
-      modelName: process.env.LLM_MODEL || 'gpt-4o-mini',
-      temperature: 0.3,
-      maxTokens: 1200,
-      configuration: process.env.OPENAI_BASE_URL ? { baseURL: process.env.OPENAI_BASE_URL } : undefined,
-    });
+    const llm = createLLM({ temperature: 0.3, maxTokens: 1200 });
+    if (!llm) throw new Error('LLM not available');
 
     const searchContext = searchResults.slice(0, 5).map(
       (s) => `- ${s.title}: ${s.content.slice(0, 200)}`

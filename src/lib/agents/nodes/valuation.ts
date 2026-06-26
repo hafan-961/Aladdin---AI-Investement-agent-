@@ -7,7 +7,7 @@
 // Calculates Margin of Safety and Bull/Base/Bear scenarios.
 // ============================================
 
-import { ChatOpenAI } from '@langchain/openai';
+import { createLLM } from '../llm';
 import type { AgentState, ValuationAnalysis, FinancialMetrics } from '../state';
 
 // Default AAA corporate bond yield (as recommended in Graham's formula)
@@ -51,12 +51,8 @@ export async function valuationNode(state: AgentState): Promise<Partial<AgentSta
   // --- LLM qualitative analysis ---
   let analysis = '';
   try {
-    const llm = new ChatOpenAI({
-      modelName: process.env.LLM_MODEL || 'gpt-4o-mini',
-      temperature: 0.3,
-      maxTokens: 1000,
-      configuration: process.env.OPENAI_BASE_URL ? { baseURL: process.env.OPENAI_BASE_URL } : undefined,
-    });
+    const llm = createLLM({ temperature: 0.3, maxTokens: 1000 });
+    if (!llm) throw new Error('LLM not available');
 
     const sym = state.company?.currency === 'INR' ? '₹' : '$';
     const prompt = isPrivate ? `You are a private equity valuation analyst.

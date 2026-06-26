@@ -9,7 +9,7 @@
 import type { AgentState, CompanyProfile } from '../state';
 import { searchTicker, fetchCompanyProfile, fetchFinancialMetrics, fetchCompanyNews, fetchHistoricalFinancials, mapTickerToGoogleFinance } from '../../api/finnhub';
 import { searchWeb } from '../../api/search';
-import { ChatOpenAI } from '@langchain/openai';
+import { createLLM, isLLMAvailable } from '../llm';
 
 /**
  * dataFetcherNode – Resolves ticker, fetches profile + metrics + news.
@@ -26,16 +26,10 @@ export async function dataFetcherNode(state: AgentState): Promise<Partial<AgentS
     mockMode: process.env.MOCK_MODE || 'none',
   });
 
-  // Enforce early credential verification (unless MOCK_MODE is enabled)
-  if (!process.env.OPENAI_API_KEY && process.env.MOCK_MODE !== 'true') {
-    console.error('[Fetcher] Missing OPENAI_API_KEY credentials.');
-    return {
-      errors: [
-        ...state.errors,
-        'Analysis failed: Missing credentials. Please pass an `apiKey`, or set the `OPENAI_API_KEY` environment variable.'
-      ],
-      status: 'error',
-    };
+  // Check LLM availability — log a warning but do NOT abort.
+  // The pipeline can still produce useful results with fallback analysis.
+  if (!isLLMAvailable()) {
+    console.warn('[Fetcher] LLM is not available. The pipeline will use fallback analysis for all nodes.');
   }
 
   const errors: string[] = [];
@@ -82,15 +76,10 @@ export async function dataFetcherNode(state: AgentState): Promise<Partial<AgentS
       description: 'Private Enterprise'
     };
 
-    try {
-      const llm = new ChatOpenAI({
-        modelName: process.env.LLM_MODEL || 'gpt-4o-mini',
-        temperature: 0.2,
-        maxTokens: 500,
-        configuration: process.env.OPENAI_BASE_URL ? { baseURL: process.env.OPENAI_BASE_URL } : undefined,
-      });
-
-      const response = await llm.invoke(`
+    const llm = createLLM({ temperature: 0.2, maxTokens: 500 });
+    if (llm) {
+      try {
+        const response = await llm.invoke(`
 You are a business research analyst. Given the search results about "${state.query}", determine:
 1. Does an actual, real company with the name "${state.query}" (or a very close spelling variation / official name) exist as a real business entity? Respond with exists: true or false.
    * Note: Generic terms, stock search phrases (like "adani stock"), or completely fictional/unrelated names should be marked as exists: false.
@@ -124,26 +113,26 @@ OR if it does not exist:
   "explanation": "..."
 }
 `);
-      const text = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
-      const cleanJson = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
-      const parsed = JSON.parse(cleanJson);
-      
-      if (parsed.exists === false) {
-        errors.push(parsed.explanation || `No company named "${state.query}" exists. Please correct the spelling or query name.`);
-        return {
-          errors: [...state.errors, ...errors],
-          status: 'error',
-        };
+        const text = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
+        const cleanJson = text.substring(text.indexOf('{'), text.lastIndexOf('}') + 1);
+        const parsed = JSON.parse(cleanJson);
+        
+        if (parsed.exists === false) {
+          errors.push(parsed.explanation || `No company named "${state.query}" exists. Please correct the spelling or query name.`);
+          return {
+            errors: [...state.errors, ...errors],
+            status: 'error',
+          };
+        }
+        
+        privateProfile = { ...privateProfile, ...parsed };
+      } catch (err: any) {
+        // LLM failed (e.g. 401) — continue with search-based fallback profile
+        console.warn('[Fetcher] Private profile LLM failed, using search-based fallback:', err.message);
+        errors.push('LLM unavailable; using search-based profile estimation.');
       }
-      
-      privateProfile = { ...privateProfile, ...parsed };
-    } catch (err: any) {
-      console.error('[Fetcher] Private profile generation failed:', err);
-      errors.push(`Analysis failed: ${err.message || 'Could not verify company existence.'}`);
-      return {
-        errors: [...state.errors, ...errors],
-        status: 'error',
-      };
+    } else {
+      console.log('[Fetcher] LLM not available, using search-based fallback for private company profile.');
     }
 
     company = {

@@ -6,7 +6,7 @@
 // LLM-generated qualitative analysis.
 // ============================================
 
-import { ChatOpenAI } from '@langchain/openai';
+import { createLLM } from '../llm';
 import type { AgentState, FundamentalAnalysis, FinancialMetrics } from '../state';
 
 /**
@@ -34,12 +34,8 @@ export async function fundamentalsNode(state: AgentState): Promise<Partial<Agent
   // --- LLM-generated qualitative analysis ---
   let analysis = '';
   try {
-    const llm = new ChatOpenAI({
-      modelName: process.env.LLM_MODEL || 'gpt-4o-mini',
-      temperature: 0.3,
-      maxTokens: 1200,
-      configuration: process.env.OPENAI_BASE_URL ? { baseURL: process.env.OPENAI_BASE_URL } : undefined,
-    });
+    const llm = createLLM({ temperature: 0.3, maxTokens: 1200 });
+    if (!llm) throw new Error('LLM not available');
 
     const sym = company?.currency === 'INR' ? '₹' : '$';
     const prompt = isPrivate ? `You are a private equity and venture capital investment analyst.

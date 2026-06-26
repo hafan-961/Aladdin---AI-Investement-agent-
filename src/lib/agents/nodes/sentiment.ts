@@ -7,7 +7,7 @@
 // the crowd is creating a buying opportunity or a bubble risk.
 // ============================================
 
-import { ChatOpenAI } from '@langchain/openai';
+import { createLLM } from '../llm';
 import type { AgentState, SentimentAnalysis } from '../state';
 import { searchWeb } from '../../api/search';
 
@@ -65,12 +65,8 @@ export async function sentimentNode(state: AgentState): Promise<Partial<AgentSta
   // --- LLM qualitative analysis ---
   let analysis = '';
   try {
-    const llm = new ChatOpenAI({
-      modelName: process.env.LLM_MODEL || 'gpt-4o-mini',
-      temperature: 0.4,
-      maxTokens: 1000,
-      configuration: process.env.OPENAI_BASE_URL ? { baseURL: process.env.OPENAI_BASE_URL } : undefined,
-    });
+    const llm = createLLM({ temperature: 0.4, maxTokens: 1000 });
+    if (!llm) throw new Error('LLM not available');
 
     const newsContext = state.newsItems.slice(0, 5).map(
       (n) => `- ${n.headline} (${n.source}, sentiment: ${n.sentiment > 0 ? 'positive' : n.sentiment < 0 ? 'negative' : 'neutral'})`

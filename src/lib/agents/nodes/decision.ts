@@ -50,6 +50,7 @@ export async function decisionNode(state: AgentState): Promise<Partial<AgentStat
 
   try {
     const llm = createLLM({ temperature: 0.4, maxTokens: 2500 });
+    if (!llm) throw new Error('LLM not available');
 
 
     const prompt = `You are a senior hedge fund manager and Benjamin Graham disciple making a final investment decision.

@@ -8,6 +8,11 @@
 // Supported auto-detection:
 //   gsk_*  → Groq   (https://api.groq.com/openai/v1)
 //   sk-*   → OpenAI (default)
+//
+// To deploy on Vercel, add these environment variables:
+//   OPENAI_API_KEY  — your Groq or OpenAI key
+//   OPENAI_BASE_URL — https://api.groq.com/openai/v1  (Groq only)
+//   LLM_MODEL       — llama-3.3-70b-versatile         (Groq only)
 // ============================================
 
 import { ChatOpenAI } from '@langchain/openai';
@@ -18,27 +23,16 @@ interface ProviderConfig {
   defaultModel: string;
 }
 
-// ── Built-in fallback credentials ─────────────────────────────────────────────
-// These are used when no OPENAI_API_KEY env var is set on the host (e.g. Vercel).
-// Key is split to avoid secret scanning false-positives in CI/CD.
-const _a = 'gsk_3PlA66eI8ZSCrCE23Jve';
-const _b = 'WGdyb3FY63kXmKFITsLOdH';
-const _c = 'byX4OETjxS';
-const FALLBACK_API_KEY = _a + _b + _c;
-const FALLBACK_BASE_URL = 'https://api.groq.com/openai/v1';
-const FALLBACK_MODEL = 'llama-3.3-70b-versatile';
-// ──────────────────────────────────────────────────────────────────────────────
-
 /**
  * Auto-detect the LLM provider from the API key prefix.
  * This removes the need to manually set OPENAI_BASE_URL and LLM_MODEL
- * on hosting platforms like Vercel.
+ * on hosting platforms like Vercel when using a Groq key.
  */
 function detectProvider(apiKey: string): ProviderConfig {
   if (apiKey.startsWith('gsk_')) {
     return {
-      baseURL: FALLBACK_BASE_URL,
-      defaultModel: FALLBACK_MODEL,
+      baseURL: 'https://api.groq.com/openai/v1',
+      defaultModel: 'llama-3.3-70b-versatile',
     };
   }
   // Default: OpenAI
@@ -49,18 +43,15 @@ function detectProvider(apiKey: string): ProviderConfig {
 }
 
 /**
- * Returns true — the LLM is always available via built-in credentials.
+ * Returns true when a valid LLM API key is configured.
  */
 export function isLLMAvailable(): boolean {
-  return true;
+  return !!process.env.OPENAI_API_KEY;
 }
 
 /**
  * Create a ChatOpenAI instance with the project's standard configuration.
- * 
- * Resolution order for credentials:
- *   1. OPENAI_API_KEY env var  (set by user in Vercel/host)
- *   2. Built-in fallback key   (always available, ensures chat works on Vercel)
+ * Returns `null` when no API key is configured — callers use fallbacks.
  *
  * Resolution order for base URL:
  *   1. OPENAI_BASE_URL env var
@@ -75,9 +66,13 @@ export function isLLMAvailable(): boolean {
  */
 export function createLLM(
   opts: { temperature?: number; maxTokens?: number } = {}
-): ChatOpenAI {
-  // Prefer user's configured key, fall back to built-in
-  const apiKey = process.env.OPENAI_API_KEY || FALLBACK_API_KEY;
+): ChatOpenAI | null {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn('[LLM] OPENAI_API_KEY not set — add it to your Vercel environment variables.');
+    return null;
+  }
+
   const provider = detectProvider(apiKey);
 
   // Explicit env vars override auto-detection

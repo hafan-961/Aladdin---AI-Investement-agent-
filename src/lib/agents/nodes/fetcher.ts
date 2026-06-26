@@ -77,7 +77,9 @@ export async function dataFetcherNode(state: AgentState): Promise<Partial<AgentS
     };
 
     try {
-      const response = await createLLM({ temperature: 0.2, maxTokens: 500 }).invoke(`
+      const llm = createLLM({ temperature: 0.2, maxTokens: 500 });
+      if (!llm) throw new Error('LLM not available');
+      const response = await llm.invoke(`
 You are a business research analyst. Given the search results about "${state.query}", determine:
 1. Does an actual, real company with the name "${state.query}" (or a very close spelling variation / official name) exist as a real business entity? Respond with exists: true or false.
    * Note: Generic terms, stock search phrases (like "adani stock"), or completely fictional/unrelated names should be marked as exists: false.

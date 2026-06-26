@@ -35,6 +35,7 @@ export async function fundamentalsNode(state: AgentState): Promise<Partial<Agent
   let analysis = '';
   try {
     const llm = createLLM({ temperature: 0.3, maxTokens: 1200 });
+    if (!llm) throw new Error('LLM not available');
 
 
     const sym = company?.currency === 'INR' ? '₹' : '$';

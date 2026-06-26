@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     let reply = '';
     try {
       const llm = createLLM({ temperature: 0.5, maxTokens: 800 });
-  
+      if (!llm) throw new Error('LLM not available');
 
       const response = await llm.invoke(
         session.messages.map((m) => ({

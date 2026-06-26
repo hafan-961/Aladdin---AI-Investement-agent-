@@ -2,39 +2,56 @@
 // Alladin – Shared LLM Factory
 // ============================================
 // Centralises ChatOpenAI creation so every node uses a consistent
-// configuration (model, base URL, API key) and can gracefully
-// degrade when credentials are missing on deployment.
+// configuration.  Auto-detects the LLM provider from the API key
+// format so Vercel deployments only need OPENAI_API_KEY set.
+//
+// Supported auto-detection:
+//   gsk_*  → Groq   (https://api.groq.com/openai/v1)
+//   sk-*   → OpenAI (default)
 // ============================================
 
 import { ChatOpenAI } from '@langchain/openai';
 
+/** Provider configuration resolved from the API key. */
+interface ProviderConfig {
+  baseURL: string | undefined;
+  defaultModel: string;
+}
+
 /**
- * Returns true when a valid LLM configuration is available.
- * Checks that OPENAI_API_KEY exists and, if a custom base URL is
- * expected (Groq key prefix), that OPENAI_BASE_URL is also set.
+ * Auto-detect the LLM provider from the API key prefix.
+ * This removes the need to manually set OPENAI_BASE_URL and LLM_MODEL
+ * on hosting platforms like Vercel.
+ */
+function detectProvider(apiKey: string): ProviderConfig {
+  if (apiKey.startsWith('gsk_')) {
+    return {
+      baseURL: 'https://api.groq.com/openai/v1',
+      defaultModel: 'llama-3.3-70b-versatile',
+    };
+  }
+  // Default: OpenAI
+  return {
+    baseURL: undefined,
+    defaultModel: 'gpt-4o-mini',
+  };
+}
+
+/**
+ * Returns true when a valid LLM API key is configured.
  */
 export function isLLMAvailable(): boolean {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) return false;
-
-  // Groq keys start with "gsk_" — they MUST have OPENAI_BASE_URL set
-  // to Groq's endpoint, otherwise LangChain will send them to OpenAI → 401.
-  if (key.startsWith('gsk_') && !process.env.OPENAI_BASE_URL) {
-    console.warn(
-      '[LLM] Groq API key detected but OPENAI_BASE_URL is not set. ' +
-      'LLM calls will be skipped to prevent 401 errors. ' +
-      'Set OPENAI_BASE_URL=https://api.groq.com/openai/v1 in your environment.'
-    );
-    return false;
-  }
-
-  return true;
+  return !!process.env.OPENAI_API_KEY;
 }
 
 /**
  * Create a ChatOpenAI instance with the project's standard
- * configuration.  Returns `null` when credentials are missing
- * so callers can fall back to non-LLM paths gracefully.
+ * configuration.  Returns `null` when no API key is set so
+ * callers can fall back to non-LLM paths gracefully.
+ *
+ * Provider and model are auto-detected from the key prefix
+ * but can be overridden via OPENAI_BASE_URL and LLM_MODEL
+ * environment variables.
  *
  * @param opts.temperature – sampling temperature (default 0.3)
  * @param opts.maxTokens   – max output tokens   (default 1200)
@@ -42,14 +59,24 @@ export function isLLMAvailable(): boolean {
 export function createLLM(
   opts: { temperature?: number; maxTokens?: number } = {}
 ): ChatOpenAI | null {
-  if (!isLLMAvailable()) return null;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    console.warn('[LLM] No OPENAI_API_KEY set — LLM calls will use fallbacks.');
+    return null;
+  }
+
+  const provider = detectProvider(apiKey);
+
+  // Explicit env vars override auto-detection
+  const baseURL = process.env.OPENAI_BASE_URL || provider.baseURL;
+  const model = process.env.LLM_MODEL || provider.defaultModel;
+
+  console.log(`[LLM] Creating instance — model: ${model}, provider: ${baseURL || 'OpenAI (default)'}`);
 
   return new ChatOpenAI({
-    modelName: process.env.LLM_MODEL || 'gpt-4o-mini',
+    modelName: model,
     temperature: opts.temperature ?? 0.3,
     maxTokens: opts.maxTokens ?? 1200,
-    configuration: process.env.OPENAI_BASE_URL
-      ? { baseURL: process.env.OPENAI_BASE_URL }
-      : undefined,
+    configuration: baseURL ? { baseURL } : undefined,
   });
 }

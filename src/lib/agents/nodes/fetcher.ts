@@ -17,6 +17,14 @@ import { ChatOpenAI } from '@langchain/openai';
  */
 export async function dataFetcherNode(state: AgentState): Promise<Partial<AgentState>> {
   console.log('[Fetcher] Starting data fetch for:', state.query);
+  console.log('[Fetcher] Env Debug:', {
+    hasKey: !!process.env.OPENAI_API_KEY,
+    keyLength: process.env.OPENAI_API_KEY?.length || 0,
+    keyPrefix: process.env.OPENAI_API_KEY ? process.env.OPENAI_API_KEY.substring(0, 8) : 'none',
+    baseUrl: process.env.OPENAI_BASE_URL || 'none',
+    model: process.env.LLM_MODEL || 'none',
+    mockMode: process.env.MOCK_MODE || 'none',
+  });
 
   // Enforce early credential verification (unless MOCK_MODE is enabled)
   if (!process.env.OPENAI_API_KEY && process.env.MOCK_MODE !== 'true') {

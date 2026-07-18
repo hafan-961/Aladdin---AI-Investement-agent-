@@ -23,6 +23,18 @@ Aladdin is a **multi-agent AI system** that performs comprehensive investment an
 5. **Valuation Expert** — Calculates intrinsic value using Graham's Revised Formula & simplified DCF, then computes Margin of Safety
 6. **Final Decision Maker** — Synthesizes all inputs into a hedge-fund-quality investment report with Invest/Pass/Wait verdict
 
+---
+### watch how it works
+
+<p align="center">
+  <a href="https://youtu.be/rpyksUb-5NY">
+    <img src="https://youtube.com" alt="Watch the video" width="560">
+  </a>
+</p>
+
+---
+
+
 ### Key Features
 
 - 🎯 **Graham Framework**: Margin of Safety, intrinsic value, Mr. Market sentiment, defensive vs. enterprising investor classification

@@ -179,7 +179,7 @@ graph TD
 ### 1. Apple (AAPL)
 
 ```
-Decision: 🟡 WAIT & MONITOR
+Decision: 🔴 pass
 Graham Score: 50/100 (5/10 criteria passed)
 Margin of Safety: -15.3% (negative — overvalued by Graham standards)
 Sentiment: 68/100 (Greed)
@@ -203,7 +203,7 @@ The market price implies perfection — there is no room for error."
 ### 3. Reliance Industries (RELIANCE.NS)
 
 ```
-Decision: 🟡 WAIT & MONITOR
+Decision: 🟢 Invest
 Graham Score: 60/100 (6/10 criteria passed)
 Margin of Safety: 8.2% (positive but below 30% threshold)
 Sentiment: 55/100 (Neutral)
@@ -216,22 +216,24 @@ A 10-15% price correction would create an attractive entry point for the defensi
 
 ## 🔮 What I Would Improve With More Time
 
-1. **Real LangGraph.js StateGraph compilation** — Use `@langchain/langgraph`'s `StateGraph.addNode()` API with proper channels and edge definitions instead of Promise.all
+1. **Train specialised Transformer Model** — I will train a transformer model from scratch using only historical stock market price data to predict price direction and momentum. The goal is to learn market patterns and trends that can help determine the optimal times to buy, sell, or hold a stock for investment decisions.
+
 2. **Streaming responses** — Stream the analysis progress in real-time using Server-Sent Events or WebSockets
 3. **Persistent vector store** — Use Pinecone or Supabase pgvector for RAG over company filings (10-K, quarterly reports)
 4. **Multi-LLM support** — Add Anthropic Claude, Groq, and local Ollama support with automatic fallback
 5. **Historical comparison** — Show how Graham metrics have trended over 5-10 years (not just point-in-time)
 6. **Portfolio mode** — Analyze multiple stocks and build a diversified Graham portfolio
 7. **Automated alerts** — Set price targets and get notified when Margin of Safety reaches 30%+
-8. **More sophisticated DCF** — Full WACC calculation with beta, risk-free rate, equity risk premium
-9. **Authentication & saved reports** — User accounts with report history and comparison tools
-10. **Unit & integration tests** — Jest/Vitest test suite for all agent nodes and API routes
+8. **Authentication & saved reports** — User accounts with report history and comparison tools
+
 
 ---
 
-## 🤖 LLM Chat Transcripts / Development Logs
+## 🤖 LLM Chat Transcripts & Development Logs
 
-### Chat Log 1: Architecture Design
+> 💡 **Bonus Points Requirement:** The full, comprehensive LLM chat session transcript detailing every development conversation, design decision, and CLI step is saved in [llm_chat_transcript.md](./llm_chat_transcript.md) in the project root.
+
+### Chat Log 1: Architecture Design (Snippet)
 
 ```
 User: Design a multi-agent investment analysis system using LangGraph.js
@@ -276,6 +278,7 @@ AI: I recommend a layered fallback strategy:
 4. Each agent node wrapped in try-catch with safeRun() helper
 5. One node failure doesn't crash the pipeline — others continue
 6. Decision maker works with partial data if necessary
+7. added rate limiting in grok api 
 ```
 
 ---

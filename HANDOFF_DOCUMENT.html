@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Aladdin – Complete Project Handoff Document</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #1a1a2e;
+      padding: 40px 50px;
+      line-height: 1.7;
+      font-size: 12px;
+      background: #fff;
+    }
+
+    /* Cover page */
+    .cover {
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 90vh;
+      text-align: center;
+    }
+    .cover h1 {
+      font-size: 42px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+    .cover .subtitle {
+      font-size: 18px;
+      color: #6366f1;
+      font-weight: 500;
+      margin-bottom: 40px;
+    }
+    .cover .meta {
+      font-size: 13px;
+      color: #888;
+      line-height: 2;
+    }
+    .cover .meta strong { color: #555; }
+
+    /* TOC */
+    .toc { page-break-after: always; }
+    .toc h2 { font-size: 22px; margin-bottom: 20px; color: #1a1a2e; border: none; }
+    .toc ol { padding-left: 24px; }
+    .toc li { margin: 6px 0; font-size: 13px; color: #444; }
+    .toc li a { color: #6366f1; text-decoration: none; }
+    .toc ol ol { margin-top: 4px; }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin: 36px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 3px solid #6366f1;
+    }
+
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin: 28px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin: 20px 0 8px;
+    }
+
+    h4 {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+      margin: 16px 0 6px;
+    }
+
+    p { margin: 8px 0; color: #444; }
+
+    strong { color: #1a1a2e; }
+
+    a { color: #6366f1; text-decoration: none; }
+
+    ul, ol { padding-left: 24px; margin: 8px 0; }
+    li { margin: 4px 0; color: #444; }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background: #f3f4f6;
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11px;
+      color: #e11d48;
+    }
+
+    pre {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      line-height: 1.6;
+      margin: 12px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0;
+      font-size: 11.5px;
+    }
+
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #374151;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    td { color: #444; }
+
+    blockquote {
+      border-left: 4px solid #6366f1;
+      padding: 12px 16px;
+      margin: 12px 0;
+      background: #f8f7ff;
+      color: #555;
+      font-style: italic;
+    }
+
+    hr {
+      border: none;
+      border-top: 1px solid #e5e5e5;
+      margin: 24px 0;
+    }
+
+    .warning-box {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+      font-size: 11.5px;
+      color: #92400e;
+    }
+
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #3b82f6;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 12px 0;
+      font-size: 11.5px;
+      color: #1e40af;
+    }
+
+    .section { page-break-inside: avoid; }
+
+    @media print {
+      body { padding: 20px 30px; font-size: 11px; }
+      pre { font-size: 9.5px; }
+      h1 { font-size: 22px; }
+      h2 { font-size: 16px; }
+      .no-print { display: none; }
+      .cover { min-height: 100vh; }
+    }
+
+    .file-tree {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      line-height: 1.5;
+      background: #1e1e2e;
+      color: #a6adc8;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      white-space: pre;
+    }
+    .file-tree .dir { color: #89b4fa; font-weight: 500; }
+    .file-tree .file { color: #a6e3a1; }
+    .file-tree .comment { color: #6c7086; }
+
+    .pipeline-box {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      margin: 16px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      line-height: 1.6;
+      white-space: pre;
+      color: #334155;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ COVER PAGE ═══════════ -->
+<div class="cover">
+  <div style="font-size: 60px; margin-bottom: 16px;">🧞</div>
+  <h1>Aladdin</h1>
+  <div class="subtitle">AI Investment Research Agent</div>
+  <div style="width: 80px; height: 3px; background: #6366f1; border-radius: 2px; margin: 0 auto 40px;"></div>
+  <div style="font-size: 16px; color: #555; margin-bottom: 40px; max-width: 500px;">
+    Complete Project Handoff Document<br>
+    <span style="font-size: 13px; color: #888;">Everything a new developer or LLM needs to continue development</span>
+  </div>
+  <div class="meta">
+    <strong>Author:</strong> Muhammed Hafan<br>
+    <strong>Date:</strong> July 7, 2026<br>
+    <strong>Stack:</strong> Next.js 16 · TypeScript · LangChain · GPT-4o · Tailwind CSS 4<br>
+    <strong>Assignment:</strong> InsideIIM × Altuni AI Labs
+  </div>
+</div>
+
+<!-- ═══════════ TABLE OF CONTENTS ═══════════ -->
+<div class="toc">
+  <h2>📋 Table of Contents</h2>
+  <ol>
+    <li><a href="#s1">Project Overview</a></li>
+    <li><a href="#s2">Tech Stack & Dependencies</a></li>
+    <li><a href="#s3">Project Structure (Complete File Map)</a></li>
+    <li><a href="#s4">Architecture & Data Flow</a></li>
+    <li><a href="#s5">Environment Variables</a></li>
+    <li><a href="#s6">Configuration Files</a></li>
+    <li><a href="#s7">Agent Pipeline (Backend Core)</a>
+      <ol>
+        <li>State Definition</li>
+        <li>LLM Factory</li>
+        <li>Graph Orchestrator</li>
+        <li>Node: Data Fetcher</li>
+        <li>Node: Fundamental Analyst</li>
+        <li>Node: Sentiment Analyst (Mr. Market)</li>
+        <li>Node: Geopolitics & Macro Analyst</li>
+        <li>Node: Valuation Expert</li>
+        <li>Node: Decision Maker</li>
+      </ol>
+    </li>
+    <li><a href="#s8">Data Layer (API Clients)</a></li>
+    <li><a href="#s9">API Routes (Next.js Server)</a></li>
+    <li><a href="#s10">Frontend Components</a></li>
+    <li><a href="#s11">Design System & Styling</a></li>
+    <li><a href="#s12">Prompt Engineering Reference</a></li>
+    <li><a href="#s13">Known Issues & Technical Debt</a></li>
+    <li><a href="#s14">How to Run</a></li>
+    <li><a href="#s15">Future Roadmap</a></li>
+  </ol>
+</div>
+
+<!-- ═══════════ SECTION 1: OVERVIEW ═══════════ -->
+<h1 id="s1">1. Project Overview</h1>
+
+<p><strong>Aladdin</strong> is a production-grade, multi-agent AI investment research system inspired by Benjamin Graham's "The Intelligent Investor". Given any company name or ticker, it:</p>
+
+<ol>
+  <li>Resolves the ticker and fetches live financial data (scraping Google Finance, Yahoo, Screener.in, StockAnalysis.com)</li>
+  <li>Runs 4 parallel analyst agents (Fundamentals, Sentiment, Geopolitics, Valuation)</li>
+  <li>Synthesizes everything into a hedge-fund-quality investment report</li>
+  <li>Delivers a clear <strong>INVEST / PASS</strong> decision with Margin of Safety</li>
+</ol>
+
+<h3>Key Differentiators</h3>
+<ul>
+  <li>Supports both <strong>public companies</strong> (US + Indian markets) and <strong>private/unlisted companies</strong></li>
+  <li><strong>Zero-API-key mode</strong>: Works with comprehensive mock data when keys are missing</li>
+  <li><strong>Real-time data scraping</strong>: No paid API dependency for financial data</li>
+  <li><strong>Session-aware chat</strong>: Follow-up Q&A about any generated report</li>
+  <li><strong>PDF export</strong>: Browser print API for clean styled reports</li>
+</ul>
+
+<!-- ═══════════ SECTION 2: TECH STACK ═══════════ -->
+<h1 id="s2">2. Tech Stack & Dependencies</h1>
+
+<h3>Core</h3>
+<table>
+  <tr><th>Layer</th><th>Technology</th><th>Version</th></tr>
+  <tr><td>Framework</td><td>Next.js</td><td>16.2.9</td></tr>
+  <tr><td>Language</td><td>TypeScript</td><td>5.x</td></tr>
+  <tr><td>React</td><td>React</td><td>19.2.4</td></tr>
+  <tr><td>Styling</td><td>Tailwind CSS</td><td>4.x (via @tailwindcss/postcss)</td></tr>
+  <tr><td>UI Primitives</td><td>Radix UI</td><td>Latest</td></tr>
+  <tr><td>Charts</td><td>Recharts</td><td>3.8.1</td></tr>
+</table>
+
+<h3>AI & Data</h3>
+<table>
+  <tr><th>Library</th><th>Version</th><th>Purpose</th></tr>
+  <tr><td>@langchain/core</td><td>^0.3.80</td><td>LangChain core types</td></tr>
+  <tr><td>@langchain/langgraph</td><td>^0.2.74</td><td>Installed but NOT used for graph compilation (see notes)</td></tr>
+  <tr><td>@langchain/openai</td><td>^0.5.18</td><td>ChatOpenAI wrapper for GPT-4o / GPT-4o-mini</td></tr>
+  <tr><td>langchain</td><td>^0.3.37</td><td>LangChain base</td></tr>
+  <tr><td>axios</td><td>^1.18.1</td><td>HTTP client for API calls + web scraping</td></tr>
+</table>
+
+<div class="info-box">
+  <strong>Note:</strong> <code>@langchain/langgraph</code> is installed but the graph compilation feature is not used. The pipeline uses manual <code>Promise.all</code> fan-out in <code>graph.ts</code>. The dependency is kept for potential future migration.
+</div>
+
+<h3>UI Libraries</h3>
+<table>
+  <tr><th>Library</th><th>Purpose</th></tr>
+  <tr><td>@radix-ui/react-tabs, dialog, progress, tooltip, slot</td><td>Accessible UI primitives</td></tr>
+  <tr><td>lucide-react</td><td>Icon library (1000+ icons)</td></tr>
+  <tr><td>class-variance-authority</td><td>Variant-based styling (cva)</td></tr>
+  <tr><td>clsx + tailwind-merge</td><td>Conditional class merging</td></tr>
+  <tr><td>date-fns</td><td>Date formatting</td></tr>
+</table>
+
+<!-- ═══════════ SECTION 3: FILE MAP ═══════════ -->
+<h1 id="s3">3. Project Structure (Complete File Map)</h1>
+
+<pre>Alladin/
+├── .env.example                 # Template with all supported env vars
+├── next.config.ts               # serverExternalPackages + bodySize
+├── package.json                 # Dependencies (install with --legacy-peer-deps)
+├── postcss.config.mjs           # Tailwind v4 PostCSS setup
+├── tsconfig.json                # ES2017, bundler resolution, @/* alias
+├── eslint.config.mjs            # ESLint v9 flat config
+├── README.md                    # Project documentation
+├── HANDOFF_DOCUMENT.md          # This document (markdown version)
+│
+└── src/
+    ├── app/
+    │   ├── layout.tsx           # Root layout (dark mode, Aladin font)
+    │   ├── page.tsx             # Main page (search→loading→result state machine)
+    │   ├── globals.css          # CSS variables, animations, prose styles
+    │   └── api/
+    │       ├── analyze/route.ts # POST — full analysis pipeline
+    │       ├── chat/route.ts    # POST — follow-up chat with session memory
+    │       ├── chart/route.ts   # GET  — Yahoo Finance historical chart
+    │       ├── diag/route.ts    # GET  — environment diagnostics
+    │       └── quotes/route.ts  # GET  — live prices for popular stocks
+    │
+    ├── components/
+    │   ├── SearchSection.tsx         # Google-style search + quick picks
+    │   ├── ChatSidebar.tsx           # Floating chat panel
+    │   ├── ReportPDF.tsx             # PDF export via browser print
+    │   ├── dashboard/
+    │   │   ├── DashboardLayout.tsx   # Main results (header+tabs+sidebar)
+    │   │   ├── MetricCards.tsx       # Financial metric cards
+    │   │   ├── FinancialCharts.tsx   # Revenue/EPS + Graham radar
+    │   │   ├── InteractiveStockChart.tsx  # Live stock chart
+    │   │   ├── SentimentGauge.tsx    # Fear→Greed semicircle gauge
+    │   │   ├── RiskHeatmap.tsx       # Geopolitical risk grid
+    │   │   └── ScenarioAnalysis.tsx  # Bull/Base/Bear cards
+    │   └── ui/
+    │       ├── badge.tsx, button.tsx, card.tsx, input.tsx, tabs.tsx
+    │       └── markdown-renderer.tsx # Regex-based MD→HTML
+    │
+    └── lib/
+        ├── utils.ts                 # cn(), formatCurrency(), formatLargeNumber()
+        ├── agents/
+        │   ├── state.ts             # All TypeScript interfaces (AgentState)
+        │   ├── llm.ts               # LLM factory (auto-detects OpenAI/Groq)
+        │   ├── graph.ts             # Pipeline orchestrator (Promise.all)
+        │   └── nodes/
+        │       ├── fetcher.ts       # Ticker resolution + data fetching
+        │       ├── fundamentals.ts  # Graham checklist + LLM analysis
+        │       ├── sentiment.ts     # Mr. Market sentiment scoring
+        │       ├── geopolitics.ts   # Macro risks via RAG + LLM
+        │       ├── valuation.ts     # Graham Formula + DCF + scenarios
+        │       └── decision.ts      # Final INVEST/PASS synthesis
+        └── api/
+            ├── finnhub.ts           # Financial data scraper (Google/Yahoo/Screener)
+            └── search.ts            # Web search (Tavily + Google News RSS)</pre>
+
+<!-- ═══════════ SECTION 4: ARCHITECTURE ═══════════ -->
+<h1 id="s4">4. Architecture & Data Flow</h1>
+
+<div class="pipeline-box">User Query ("Apple", "Reliance", "TSLA")
+        │
+        ▼
+┌──────────────────┐
+│  /api/analyze     │  ← Next.js API Route (POST)
+└────────┬─────────┘
+         ▼
+┌──────────────────┐
+│  graph.ts         │  ← Pipeline Orchestrator
+│  runInvestment-   │
+│  Analysis()       │
+└────────┬─────────┘
+         │
+    STEP 1: Sequential
+         ▼
+┌──────────────────┐
+│  Fetcher Node     │  → Resolves ticker, scrapes profile + metrics + news
+│  (fetcher.ts)     │  → Sources: Yahoo Search → Google Finance → Screener/SA
+└────────┬─────────┘
+         │
+    STEP 2: Parallel (Promise.all)
+    ┌────┴────┬────────┬──────────┐
+    ▼         ▼        ▼          ▼
+┌────────┐ ┌──────┐ ┌──────┐ ┌──────┐
+│Fundmntl│ │Sntmnt│ │Geo   │ │Valtn │
+│  Node  │ │ Node │ │ Node │ │ Node │
+└────┬───┘ └──┬───┘ └──┬───┘ └──┬───┘
+     └────────┴────────┴────────┘
+         │
+    STEP 3: Sequential
+         ▼
+┌──────────────────┐
+│  Decision Node    │  → Reads ALL outputs → INVEST/PASS + full report
+└────────┬─────────┘
+         ▼
+    AgentState (JSON) → Frontend renders dashboard</div>
+
+<h3>Data Fetch Chain (Step 1 Detail)</h3>
+<ol>
+  <li><code>searchTicker(query)</code> → Yahoo Finance Search API + local fallback map</li>
+  <li>If not found → <strong>private company path</strong>: web search + LLM validates existence</li>
+  <li><code>fetchCompanyProfile(ticker)</code> → Google Finance scraping + Yahoo Quote + quoteSummary</li>
+  <li><code>fetchFinancialMetrics(ticker)</code> → Google Finance + Screener.in (India) / StockAnalysis.com (US)</li>
+  <li><code>fetchHistoricalFinancials(ticker)</code> → Screener.in P&L / StockAnalysis financials</li>
+  <li><code>fetchCompanyNews(ticker)</code> → Google News RSS feed</li>
+</ol>
+
+<!-- ═══════════ SECTION 5: ENV VARS ═══════════ -->
+<h1 id="s5">5. Environment Variables</h1>
+
+<table>
+  <tr><th>Variable</th><th>Required</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>OPENAI_API_KEY</code></td><td><strong>Recommended</strong></td><td>—</td><td>OpenAI key (<code>sk-</code>) or Groq key (<code>gsk_</code>)</td></tr>
+  <tr><td><code>LLM_MODEL</code></td><td>No</td><td>gpt-4o-mini / llama-3.3-70b</td><td>Model name</td></tr>
+  <tr><td><code>OPENAI_BASE_URL</code></td><td>No</td><td>Auto-detected</td><td>Override for compatible providers</td></tr>
+  <tr><td><code>TAVILY_API_KEY</code></td><td>No</td><td>—</td><td>Tavily API for web search RAG</td></tr>
+  <tr><td><code>FINNHUB_API_KEY</code></td><td>No</td><td>—</td><td>In .env but currently unused by code</td></tr>
+  <tr><td><code>CORPORATE_BOND_YIELD</code></td><td>No</td><td>4.4</td><td>AAA bond yield for Graham formula</td></tr>
+</table>
+
+<div class="warning-box">
+  <strong>⚠️ Security Warning:</strong> The <code>.env.example</code> file contains real API keys. These must be rotated immediately if the repo is made public.
+</div>
+
+<!-- ═══════════ SECTION 6: CONFIG FILES ═══════════ -->
+<h1 id="s6">6. Configuration Files</h1>
+
+<h3>next.config.ts</h3>
+<ul>
+  <li><code>serverExternalPackages</code>: LangChain packages excluded from client bundles</li>
+  <li><code>experimental.serverActions.bodySizeLimit</code>: 2mb for large analysis payloads</li>
+</ul>
+
+<h3>tsconfig.json</h3>
+<ul>
+  <li>Target: ES2017 | Module: esnext | Resolution: bundler</li>
+  <li>Path alias: <code>@/*</code> → <code>./src/*</code></li>
+  <li>JSX: react-jsx (React 19 automatic runtime)</li>
+</ul>
+
+<h3>postcss.config.mjs</h3>
+<ul>
+  <li>Uses <code>@tailwindcss/postcss</code> (Tailwind v4 — no tailwind.config needed)</li>
+</ul>
+
+<!-- ═══════════ SECTION 7: AGENT PIPELINE ═══════════ -->
+<h1 id="s7">7. Agent Pipeline (Backend Core)</h1>
+
+<h2>7.1 State Definition — <code>src/lib/agents/state.ts</code></h2>
+
+<p>Central contract. Every node reads from and writes to <code>AgentState</code>:</p>
+
+<pre>interface AgentState {
+  query: string;
+  company: CompanyProfile | null;
+  rawFinancials: Record&lt;string, unknown&gt; | null;  // { metrics, historicalData }
+  newsItems: NewsItem[];
+  fundamentals: FundamentalAnalysis | null;
+  sentiment: SentimentAnalysis | null;
+  geopolitics: GeopoliticsAnalysis | null;
+  valuation: ValuationAnalysis | null;
+  decision: InvestmentDecision | null;
+  scrapedUrls?: { title: string; url: string; confidence: number }[];
+  errors: string[];
+  status: 'idle' | 'fetching' | 'analyzing' | 'deciding' | 'complete' | 'error';
+}</pre>
+
+<h3>Key Sub-Interfaces</h3>
+<ul>
+  <li><strong>FinancialMetrics</strong>: P/E, P/B, EPS, ROE, D/E, current ratio, FCF, margins, growth, dividend yield, market cap, book value</li>
+  <li><strong>CompanyProfile</strong>: name, ticker, exchange, industry, sector, country, currency, price, 52-week range, logo, weburl</li>
+  <li><strong>FundamentalAnalysis</strong>: metrics, grahamChecklist[], highlights[], historicalData[], score (0-100), analysis (markdown)</li>
+  <li><strong>SentimentAnalysis</strong>: overallSentiment (enum), sentimentScore (0-100), newsItems[], socialMentions[], analysis</li>
+  <li><strong>GeopoliticsAnalysis</strong>: risks[] (factor, severity, likelihood, desc), opportunities[], macroIndicators[], analysis</li>
+  <li><strong>ValuationAnalysis</strong>: grahamValue, dcfValue, intrinsicValue, currentPrice, marginOfSafety, scenarios, analysis</li>
+  <li><strong>InvestmentDecision</strong>: action (INVEST|PASS|WAIT_MONITOR), confidenceScore, targetPrice, stopLoss, timeHorizon, reasoning, sources[], disclaimer</li>
+</ul>
+
+<h2>7.2 LLM Factory — <code>src/lib/agents/llm.ts</code></h2>
+<ul>
+  <li><code>createLLM(opts?)</code>: Returns <code>ChatOpenAI | null</code></li>
+  <li>Auto-detects provider: <code>gsk_*</code> → Groq | <code>sk-*</code> → OpenAI</li>
+  <li>Defaults: temperature 0.3, maxTokens 1200</li>
+</ul>
+
+<h2>7.3 Graph Orchestrator — <code>src/lib/agents/graph.ts</code></h2>
+<ul>
+  <li><code>runInvestmentAnalysis(query, onProgress?)</code>: Main entry point</li>
+  <li>Step 1: <code>dataFetcherNode</code> (sequential)</li>
+  <li>Step 2: <code>Promise.all([fund, sent, geo, val])</code> wrapped in <code>safeRun()</code></li>
+  <li>Step 3: <code>decisionNode</code> (sequential)</li>
+  <li><code>safeRun(name, fn)</code>: Prevents one analyst failure from crashing pipeline</li>
+</ul>
+
+<h2>7.4 Node: Data Fetcher — <code>src/lib/agents/nodes/fetcher.ts</code></h2>
+<p><strong>Reads</strong>: <code>state.query</code> | <strong>Writes</strong>: company, rawFinancials, newsItems, scrapedUrls, errors, status</p>
+<ul>
+  <li>Resolves ticker via <code>searchTicker()</code> → Yahoo Finance Search</li>
+  <li>Private company path: web search + LLM validates existence, extracts profile</li>
+  <li>Public company: scrapes Google Finance + Screener.in/StockAnalysis + Yahoo</li>
+  <li>Fetches news via Google News RSS</li>
+  <li>Stores <code>rawFinancials</code> as <code>{ metrics, historicalData }</code></li>
+</ul>
+
+<h2>7.5 Node: Fundamental Analyst — <code>fundamentals.ts</code></h2>
+<p><strong>Reads</strong>: company, rawFinancials | <strong>Writes</strong>: fundamentals</p>
+<p>Builds Graham's 10-Point Defensive Investor Checklist:</p>
+<ol>
+  <li>Adequate Size (Market Cap &gt; $2B)</li>
+  <li>Strong Financial Condition (Current Ratio &gt; 2.0)</li>
+  <li>Earnings Stability (Positive EPS)</li>
+  <li>Dividend Record (Yield &gt; 0%)</li>
+  <li>Earnings Growth (Revenue Growth &gt; 0%)</li>
+  <li>Moderate P/E (&lt; 20)</li>
+  <li>Moderate P/B (&lt; 2.5)</li>
+  <li>Conservative Debt (D/E &lt; 1.0)</li>
+  <li>Positive Free Cash Flow</li>
+  <li>Healthy Profit Margin (&gt; 5%)</li>
+</ol>
+<p>Private companies use a 5-point VC/PE checklist instead.</p>
+
+<h2>7.6 Node: Sentiment Analyst — <code>sentiment.ts</code></h2>
+<p><strong>Reads</strong>: company, newsItems | <strong>Writes</strong>: sentiment, scrapedUrls</p>
+<ul>
+  <li>Searches web for market sentiment data</li>
+  <li>Weighted formula: news (40%) + social (30%) + search (30%)</li>
+  <li>Classifies: extreme_fear / fear / neutral / greed / extreme_greed</li>
+</ul>
+<div class="warning-box">⚠️ Social media mentions (Reddit, Twitter, StockTwits) are <strong>mock/randomized</strong> data.</div>
+
+<h2>7.7 Node: Geopolitics — <code>geopolitics.ts</code></h2>
+<p><strong>Reads</strong>: company, newsItems | <strong>Writes</strong>: geopolitics, scrapedUrls</p>
+<ul>
+  <li>3 parallel search queries: company risks, sector policies, global macro</li>
+  <li>Macro indicators hardcoded by country (US vs India)</li>
+  <li>LLM outputs structured JSON: <code>{ risks[], opportunities[], analysis }</code></li>
+</ul>
+
+<h2>7.8 Node: Valuation Expert — <code>valuation.ts</code></h2>
+<p><strong>Reads</strong>: company, rawFinancials | <strong>Writes</strong>: valuation</p>
+
+<h3>Graham's Revised Formula</h3>
+<pre>V = EPS × (8.5 + 2g) × 4.4 / Y
+  EPS = trailing twelve months
+  g   = growth rate (capped 15%)
+  Y   = AAA bond yield (default 4.4)</pre>
+
+<h3>Simplified DCF</h3>
+<pre>10-year projection: Years 1-5 high growth, Years 6-10 fading
+Terminal value: Gordon Growth Model (2.5% perpetual)
+Discount rate: 10% (hardcoded WACC)
+Per-share: simplified scaling (fcf × growthMultiple × 15)</pre>
+
+<h3>Margin of Safety</h3>
+<pre>MoS = (Intrinsic Value - Current Price) / Intrinsic Value × 100%
+Intrinsic Value = 50/50 blend of Graham + DCF
+Graham recommends ≥ 30%</pre>
+
+<h2>7.9 Node: Decision Maker — <code>decision.ts</code></h2>
+<p><strong>Reads</strong>: ALL outputs | <strong>Writes</strong>: decision, status</p>
+
+<h3>Composite Score</h3>
+<pre>Fundamentals: 35%
+Valuation (MoS): 30%
+Sentiment: 20%
+Geopolitics (inverse risk): 15%
+
+Fallback: INVEST if composite ≥ 45 AND MoS ≥ -5%, else PASS</pre>
+
+<p>LLM generates full investment report. Action extracted via regex. Sources deduplicated, sorted by confidence, top 8 kept.</p>
+
+<!-- ═══════════ SECTION 8: DATA LAYER ═══════════ -->
+<h1 id="s8">8. Data Layer (API Clients)</h1>
+
+<h2>8.1 finnhub.ts — Financial Data Scraper (867 lines)</h2>
+
+<div class="info-box">Despite the filename, this file does <strong>NOT</strong> use the Finnhub API. It was migrated to web scraping.</div>
+
+<table>
+  <tr><th>Function</th><th>Purpose</th><th>Sources</th></tr>
+  <tr><td><code>searchTicker(query)</code></td><td>Name → ticker</td><td>Yahoo Search + local map</td></tr>
+  <tr><td><code>fetchCompanyProfile(ticker)</code></td><td>Profile data</td><td>Google Finance + Yahoo Quote</td></tr>
+  <tr><td><code>fetchFinancialMetrics(ticker)</code></td><td>Financial ratios</td><td>Google Finance + Screener.in/StockAnalysis + Yahoo</td></tr>
+  <tr><td><code>fetchHistoricalFinancials(ticker)</code></td><td>5-year history</td><td>Screener.in P&L / StockAnalysis</td></tr>
+  <tr><td><code>fetchCompanyNews(ticker)</code></td><td>News articles</td><td>Google News RSS</td></tr>
+</table>
+
+<h3>Internal Scrapers</h3>
+<table>
+  <tr><th>Function</th><th>Target</th><th>Technique</th></tr>
+  <tr><td><code>scrapeGoogleFinance</code></td><td>Google Finance</td><td>Regex on jsname/class attrs</td></tr>
+  <tr><td><code>scrapeScreener</code></td><td>Screener.in</td><td>Ratio sidebar + BS + P&L tables</td></tr>
+  <tr><td><code>scrapeStockAnalysis</code></td><td>StockAnalysis.com</td><td>Statistics table parsing</td></tr>
+</table>
+
+<h2>8.2 search.ts — Web Search / RAG (187 lines)</h2>
+<p>Resolution order: Tavily API → Google News RSS + article scraping → Mock results</p>
+
+<!-- ═══════════ SECTION 9: API ROUTES ═══════════ -->
+<h1 id="s9">9. API Routes</h1>
+
+<table>
+  <tr><th>Route</th><th>Method</th><th>Purpose</th></tr>
+  <tr><td><code>/api/analyze</code></td><td>POST</td><td>Full analysis pipeline (maxDuration=120s)</td></tr>
+  <tr><td><code>/api/chat</code></td><td>POST</td><td>Follow-up Q&A with in-memory sessions</td></tr>
+  <tr><td><code>/api/chart</code></td><td>GET</td><td>Yahoo Finance historical chart data</td></tr>
+  <tr><td><code>/api/diag</code></td><td>GET</td><td>Environment diagnostics (debug)</td></tr>
+  <tr><td><code>/api/quotes</code></td><td>GET</td><td>Live prices for 8 popular stocks (60s cache)</td></tr>
+</table>
+
+<!-- ═══════════ SECTION 10: FRONTEND ═══════════ -->
+<h1 id="s10">10. Frontend Components</h1>
+
+<h3>Page State Machine</h3>
+<pre>search → loading → result → (chat sidebar visible)
+                 → error  → search (reset)</pre>
+
+<h3>Component Map</h3>
+<table>
+  <tr><th>Component</th><th>Purpose</th></tr>
+  <tr><td><code>SearchSection</code></td><td>Google-style search bar + 8 quick picks with live prices</td></tr>
+  <tr><td><code>DashboardLayout</code></td><td>Stock header + decision badge + 5 tabs + sidebar stats</td></tr>
+  <tr><td><code>InteractiveStockChart</code></td><td>Recharts area chart with 8 range options</td></tr>
+  <tr><td><code>FinancialCharts</code></td><td>Revenue/EPS bar chart + Graham radar chart</td></tr>
+  <tr><td><code>SentimentGauge</code></td><td>SVG semicircle gauge (Fear→Greed)</td></tr>
+  <tr><td><code>RiskHeatmap</code></td><td>Risk cards with severity coloring + macro table</td></tr>
+  <tr><td><code>ScenarioAnalysis</code></td><td>Bull/Base/Bear price target cards</td></tr>
+  <tr><td><code>ChatSidebar</code></td><td>Floating chat panel with pre-populated questions</td></tr>
+  <tr><td><code>ReportPDF</code></td><td>PDF export via browser window.print()</td></tr>
+  <tr><td><code>MarkdownRenderer</code></td><td>Regex-based MD→HTML (no remark dependency)</td></tr>
+</table>
+
+<!-- ═══════════ SECTION 11: DESIGN ═══════════ -->
+<h1 id="s11">11. Design System & Styling</h1>
+
+<h3>Theme (CSS Custom Properties in globals.css)</h3>
+<table>
+  <tr><th>Token</th><th>Light</th><th>Dark</th></tr>
+  <tr><td>--background</td><td>#ffffff</td><td>#121212</td></tr>
+  <tr><td>--surface</td><td>#f8f9fa</td><td>#1e1e1e</td></tr>
+  <tr><td>--text-primary</td><td>#202124</td><td>#f1f3f4</td></tr>
+  <tr><td>--accent</td><td>#1a73e8</td><td>#8ab4f8</td></tr>
+  <tr><td>--positive</td><td>#0d7d4d</td><td>#81c995</td></tr>
+  <tr><td>--negative</td><td>#c5221f</td><td>#f28b82</td></tr>
+</table>
+<p>App defaults to <strong>dark mode</strong> (<code>&lt;html class="dark"&gt;</code>). Font: Inter + Aladin (brand).</p>
+
+<!-- ═══════════ SECTION 12: PROMPTS ═══════════ -->
+<h1 id="s12">12. Prompt Engineering Reference</h1>
+
+<table>
+  <tr><th>Node</th><th>Role</th><th>Output Format</th><th>Temp</th><th>Max Tokens</th></tr>
+  <tr><td>Fetcher (private)</td><td>Business research analyst</td><td>JSON: exists + profile fields</td><td>0.2</td><td>500</td></tr>
+  <tr><td>Fundamentals</td><td>Graham value investor</td><td>4-5 paragraph markdown</td><td>0.3</td><td>1200</td></tr>
+  <tr><td>Sentiment</td><td>Mr. Market analyst</td><td>3-4 paragraph markdown</td><td>0.4</td><td>1000</td></tr>
+  <tr><td>Geopolitics</td><td>Geopolitical risk analyst</td><td><strong>Structured JSON</strong>: risks, opportunities, analysis</td><td>0.3</td><td>1200</td></tr>
+  <tr><td>Valuation</td><td>Graham valuation expert</td><td>3-4 paragraph markdown</td><td>0.3</td><td>1000</td></tr>
+  <tr><td>Decision</td><td>Senior hedge fund manager</td><td>Full structured report (markdown)</td><td>0.4</td><td>2500</td></tr>
+  <tr><td>Chat</td><td>Aladdin investment advisor</td><td>Conversational markdown</td><td>0.5</td><td>800</td></tr>
+</table>
+
+<p>All nodes have alternate prompts for private/unlisted companies using VC/PE terminology.</p>
+
+<!-- ═══════════ SECTION 13: KNOWN ISSUES ═══════════ -->
+<h1 id="s13">13. Known Issues & Technical Debt</h1>
+
+<h3>🔴 Critical</h3>
+<ol>
+  <li><strong>API keys in .env.example</strong> — Real keys committed; must rotate</li>
+  <li><strong>Social sentiment is fake</strong> — Random Math.random() data shown as real</li>
+  <li><strong>Macro indicators hardcoded</strong> — Not fetched live</li>
+  <li><strong>DCF model simplified</strong> — Uses scaling formula, not proper shares-outstanding DCF</li>
+  <li><strong>Chat sessions in-memory</strong> — Lost on server restart</li>
+</ol>
+
+<h3>🟡 Medium</h3>
+<ol start="6">
+  <li><strong>Web scraping fragile</strong> — CSS classes can change anytime</li>
+  <li><strong>No streaming</strong> — Loading steps are cosmetic 3s timers</li>
+  <li><strong>Markdown renderer regex-based</strong> — Doesn't handle all edge cases</li>
+  <li><strong>No React error boundaries</strong></li>
+  <li><strong>Zero tests</strong> — No unit, integration, or E2E tests</li>
+  <li><strong>LangGraph dependency unused</strong> — Installed but graph compilation not used</li>
+</ol>
+
+<h3>🟢 Low</h3>
+<ol start="12">
+  <li>Clearbit logos may not resolve for all companies</li>
+  <li>No result caching — every analysis runs full pipeline</li>
+  <li>Google News RSS may rate-limit</li>
+</ol>
+
+<!-- ═══════════ SECTION 14: HOW TO RUN ═══════════ -->
+<h1 id="s14">14. How to Run</h1>
+
+<pre>git clone &lt;repo-url&gt;
+cd alladin
+
+# Install (--legacy-peer-deps required for React 19 peer conflicts)
+npm install --legacy-peer-deps
+
+# Setup environment
+cp .env.example .env.local
+# Edit .env.local — at minimum set OPENAI_API_KEY
+
+# Development
+npm run dev    # → http://localhost:3000
+
+# Production
+npm run build
+npm start
+
+# Deploy
+vercel deploy  # Set env vars in Vercel dashboard</pre>
+
+<p><strong>Minimum</strong>: Node.js ≥ 18, npm ≥ 9. Works without any API keys using fallback data.</p>
+
+<!-- ═══════════ SECTION 15: ROADMAP ═══════════ -->
+<h1 id="s15">15. Future Roadmap</h1>
+
+<h3>Author's Wishlist</h3>
+<ol>
+  <li>Train specialized Transformer model on historical price data</li>
+  <li>Streaming responses (SSE/WebSocket)</li>
+  <li>Persistent vector store for RAG over company filings</li>
+  <li>Multi-LLM support (Claude, Groq, Ollama)</li>
+  <li>Historical Graham metric trends (5-10 years)</li>
+  <li>Portfolio mode (multi-stock analysis)</li>
+  <li>Automated price alerts (MoS ≥ 30%)</li>
+  <li>Auth + saved reports</li>
+</ol>
+
+<h3>Suggested Technical Improvements</h3>
+<ol start="9">
+  <li>Replace scraping with proper paid data APIs</li>
+  <li>Add real social media sentiment (Reddit/Twitter APIs)</li>
+  <li>Live macro indicators (FRED API)</li>
+  <li>Implement actual LangGraph graph compilation</li>
+  <li>Add Redis for persistent chat sessions</li>
+  <li>Add Playwright E2E tests</li>
+  <li>Fix DCF to use shares outstanding</li>
+  <li>Connect onProgress to real pipeline stages via SSE</li>
+</ol>
+
+<hr>
+
+<h2>Quick Reference for Continuing Development</h2>
+
+<table>
+  <tr><th>To do this...</th><th>Edit these files</th></tr>
+  <tr><td>Modify analysis logic</td><td><code>src/lib/agents/nodes/*.ts</code></td></tr>
+  <tr><td>Add new data source</td><td><code>src/lib/api/finnhub.ts</code> + <code>fetcher.ts</code> + <code>state.ts</code></td></tr>
+  <tr><td>Modify UI</td><td><code>src/components/dashboard/DashboardLayout.tsx</code></td></tr>
+  <tr><td>Change design tokens</td><td><code>src/app/globals.css</code></td></tr>
+  <tr><td>Add API route</td><td><code>src/app/api/&lt;name&gt;/route.ts</code></td></tr>
+  <tr><td>Change LLM provider</td><td>Set <code>OPENAI_API_KEY</code>, <code>OPENAI_BASE_URL</code>, <code>LLM_MODEL</code> env vars</td></tr>
+  <tr><td>Add new agent node</td><td>Create in <code>nodes/</code>, add to <code>state.ts</code>, wire in <code>graph.ts</code></td></tr>
+</table>
+
+<div style="margin-top: 60px; text-align: center; color: #aaa; font-size: 11px; border-top: 1px solid #eee; padding-top: 16px;">
+  <p>Aladdin – AI Investment Research Agent</p>
+  <p>Handoff Document · Generated July 7, 2026</p>
+  <p>Author: Muhammed Hafan</p>
+</div>
+
+<script>
+  // Auto-print when opened in browser
+  // Uncomment the line below to auto-trigger print dialog
+  // window.onload = function() { window.print(); };
+</script>
+</body>
+</html>

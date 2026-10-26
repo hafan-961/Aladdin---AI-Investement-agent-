@@ -102,18 +102,25 @@ async function scrapeGoogleFinance(ticker: string): Promise<any> {
       }
     }
 
-    // 2. Scrape Price (first jsname="Pdsbrc" span after the company name in the body)
+    // 2. Scrape Price (use Google Finance primary price container classes)
     let price = 0;
-    const titleIndex = data.indexOf('<title>');
-    let nameIndex = data.indexOf(name, titleIndex + 50);
-    if (nameIndex === -1) {
-      nameIndex = titleIndex;
+    const n6syteMatch = data.match(/class="[^"]*N6SYTe[^"]*"[^>]*>[\s\S]*?<span>([^<]+)<\/span>/);
+    const ymlMatch = data.match(/class="[^"]*YMlKec fxKbKc[^"]*"[^>]*>([^<]+)<\/div>/);
+    let priceString = n6syteMatch ? n6syteMatch[1] : (ymlMatch ? ymlMatch[1] : '');
+
+    if (!priceString) {
+      const titleIndex = data.indexOf('<title>');
+      let nameIndex = data.indexOf(name, titleIndex + 50);
+      if (nameIndex === -1) {
+        nameIndex = titleIndex;
+      }
+      const pdsbrcRegex = /jsname="Pdsbrc"[^>]*><span>([^<]+)<\/span>/g;
+      pdsbrcRegex.lastIndex = nameIndex + 500;
+      const priceMatch = pdsbrcRegex.exec(data);
+      if (priceMatch) {
+        priceString = priceMatch[1];
+      }
     }
-    
-    const pdsbrcRegex = /jsname="Pdsbrc"[^>]*><span>([^<]+)<\/span>/g;
-    pdsbrcRegex.lastIndex = nameIndex;
-    const priceMatch = pdsbrcRegex.exec(data);
-    let priceString = priceMatch ? priceMatch[1] : '';
 
     if (priceString) {
       price = parseFloat(priceString.replace(/[^\d.]/g, ''));
@@ -342,21 +349,68 @@ function parseMarketCap(mktCapStr: string | undefined, isINR: boolean): number {
   return num;
 }
 
-// Helper to query Yahoo quote endpoint (v7)
-async function fetchQuote(ticker: string): Promise<any> {
+// Helper to query Yahoo quote endpoint (v8 Chart API) + Finnhub fallback
+export async function fetchQuote(ticker: string): Promise<any> {
+  const cleanTicker = ticker.toUpperCase();
+
+  // 1. Primary: Yahoo v8 chart endpoint (unauthenticated, highly reliable)
   try {
     const { data } = await axios.get(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(ticker)}`,
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(cleanTicker)}?range=1d&interval=1d`,
       {
-        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36' },
         timeout: 6000
       }
     );
-    return data?.quoteResponse?.result?.[0] || null;
-  } catch (err) {
-    console.error('[Yahoo Quote] Failed to fetch quote:', ticker, err);
-    return null;
+    const meta = data?.chart?.result?.[0]?.meta;
+    if (meta && meta.regularMarketPrice) {
+      return {
+        regularMarketPrice: meta.regularMarketPrice,
+        regularMarketPreviousClose: meta.chartPreviousClose || meta.previousClose,
+        regularMarketChangePercent: meta.regularMarketChangePercent,
+        fiftyTwoWeekHigh: meta.fiftyTwoWeekHigh,
+        fiftyTwoWeekLow: meta.fiftyTwoWeekLow,
+        currency: meta.currency,
+        exchange: meta.exchangeName || meta.fullExchangeName,
+        fullExchangeName: meta.fullExchangeName || meta.exchangeName,
+        longName: meta.longName || meta.shortName,
+        shortName: meta.shortName || meta.longName,
+        marketCap: null,
+      };
+    }
+  } catch (err: any) {
+    console.warn(`[Yahoo v8 Quote] Failed for ${cleanTicker}:`, err.message);
   }
+
+  // 2. Fallback: Finnhub Quote API if key available
+  if (process.env.FINNHUB_API_KEY) {
+    try {
+      const sym = cleanTicker.split('.')[0];
+      const { data } = await axios.get(
+        `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${process.env.FINNHUB_API_KEY}`,
+        { timeout: 5000 }
+      );
+      if (data && data.c && data.c > 0) {
+        return {
+          regularMarketPrice: data.c,
+          regularMarketPreviousClose: data.pc,
+          regularMarketChangePercent: data.dp,
+          fiftyTwoWeekHigh: data.h,
+          fiftyTwoWeekLow: data.l,
+          currency: 'USD',
+          exchange: 'US',
+          fullExchangeName: 'US',
+          longName: sym,
+          shortName: sym,
+          marketCap: null,
+        };
+      }
+    } catch (err: any) {
+      console.warn(`[Finnhub Quote] Failed for ${cleanTicker}:`, err.message);
+    }
+  }
+
+  return null;
 }
 
 // Helper to query Yahoo quoteSummary
@@ -444,69 +498,83 @@ export async function searchTicker(query: string): Promise<string | null> {
 }
 
 /**
- * fetchCompanyProfile – Scrapes company profile (sector, country, price) from Google Finance.
+ * fetchCompanyProfile – Scrapes company profile (sector, country, price) from Yahoo, Finnhub, Google Finance, and Screener/StockAnalysis.
  */
 export async function fetchCompanyProfile(ticker: string): Promise<CompanyProfile | null> {
   const cleanTicker = ticker.toUpperCase();
+  const quote = await fetchQuote(ticker);
   const gFinance = await scrapeGoogleFinance(ticker);
   
-  const isINR = cleanTicker.endsWith('.NS') || cleanTicker.endsWith('.BO') || (gFinance?.currency === 'INR');
+  const isINR = cleanTicker.endsWith('.NS') || cleanTicker.endsWith('.BO') || (quote?.currency === 'INR') || (gFinance?.currency === 'INR');
   
   let screenerData: any = null;
   let saData: any = null;
+  let finnhubProfile: any = null;
+
   if (isINR) {
     screenerData = await scrapeScreener(ticker);
   } else {
     saData = await scrapeStockAnalysis(ticker);
+    if (process.env.FINNHUB_API_KEY) {
+      try {
+        const cleanSym = cleanTicker.split('.')[0];
+        const res = await axios.get(`https://finnhub.io/api/v1/stock/profile2?symbol=${cleanSym}&token=${process.env.FINNHUB_API_KEY}`, { timeout: 5000 });
+        if (res.data && res.data.name) {
+          finnhubProfile = res.data;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
-  const quote = await fetchQuote(ticker);
-  const summary = await fetchQuoteSummary(ticker, 'assetProfile');
-
-  const profile = summary?.assetProfile || {};
-  let name = gFinance?.name || quote?.longName || quote?.shortName || cleanTicker;
-  if (name.toLowerCase() === 'google finance') {
-    name = quote?.longName || quote?.shortName || cleanTicker;
-  }
-  const currentPrice = gFinance?.price || quote?.regularMarketPrice || quote?.regularMarketPreviousClose || 150;
-  const currency = gFinance?.currency || quote?.currency || (isINR ? 'INR' : 'USD');
-  const exchange = gFinance?.exchange || quote?.fullExchangeName || quote?.exchange || (isINR ? 'NSE' : 'NASDAQ');
+  const name = quote?.longName || quote?.shortName || finnhubProfile?.name || gFinance?.name || cleanTicker;
+  const currentPrice = quote?.regularMarketPrice || gFinance?.price || 150;
+  const currency = quote?.currency || gFinance?.currency || (isINR ? 'INR' : 'USD');
+  const exchange = quote?.fullExchangeName || quote?.exchange || gFinance?.exchange || (isINR ? 'NSE' : 'NASDAQ');
   
-  let high52Week = 0;
-  let low52Week = 0;
-  
-  const highVal = gFinance?.stats?.['52-wk high'] || gFinance?.stats?.['52-week high'] || screenerData?.ratios?.['High / Low'] || saData?.['52-Week Price Range']?.split('-')?.[1];
-  if (highVal) {
-    high52Week = parseFloat(highVal.replace(/[^\d.]/g, ''));
-  }
+  let high52Week = quote?.fiftyTwoWeekHigh || 0;
   if (!high52Week) {
-    high52Week = quote?.fiftyTwoWeekHigh || currentPrice * 1.2;
+    const highVal = gFinance?.stats?.['52-wk high'] || gFinance?.stats?.['52-week high'] || screenerData?.ratios?.['High / Low'] || saData?.['52-Week Price Range']?.split('-')?.[1];
+    if (highVal) high52Week = parseFloat(highVal.replace(/[^\d.]/g, ''));
   }
-  
-  const lowVal = gFinance?.stats?.['52-wk low'] || gFinance?.stats?.['52-week low'] || saData?.['52-Week Price Range']?.split('-')?.[0];
-  if (lowVal) {
-    low52Week = parseFloat(lowVal.replace(/[^\d.]/g, ''));
-  }
+  if (!high52Week) high52Week = currentPrice * 1.15;
+
+  let low52Week = quote?.fiftyTwoWeekLow || 0;
   if (!low52Week) {
-    low52Week = quote?.fiftyTwoWeekLow || currentPrice * 0.8;
+    const lowVal = gFinance?.stats?.['52-wk low'] || gFinance?.stats?.['52-week low'] || saData?.['52-Week Price Range']?.split('-')?.[0];
+    if (lowVal) low52Week = parseFloat(lowVal.replace(/[^\d.]/g, ''));
+  }
+  if (!low52Week) low52Week = currentPrice * 0.85;
+
+  const mktCapVal = saData?.['Market Cap'] || gFinance?.stats?.['Mkt. cap'] || gFinance?.stats?.['Mkt cap'] || screenerData?.ratios?.['Market Cap'];
+  let mktCap = mktCapVal ? parseMarketCap(mktCapVal, currency === 'INR') : 0;
+  if (!mktCap && finnhubProfile?.marketCapitalization) {
+    mktCap = finnhubProfile.marketCapitalization * 1e6;
+  }
+  if (!mktCap) {
+    mktCap = isINR ? 1e11 : 1e11;
   }
 
-  const mktCapVal = gFinance?.stats?.['Mkt. cap'] || gFinance?.stats?.['Mkt cap'] || screenerData?.ratios?.['Market Cap'] || saData?.['Market Cap'];
-  const mktCap = mktCapVal ? parseMarketCap(mktCapVal, currency === 'INR') : (quote?.marketCap || 1e11);
+  const industry = finnhubProfile?.finnhubIndustry || (isINR ? 'Electric Utilities' : 'Technology');
+  const sector = finnhubProfile?.finnhubIndustry || (isINR ? 'Utilities' : 'Technology');
+  const country = finnhubProfile?.country || (isINR ? 'India' : 'US');
+  const logo = finnhubProfile?.logo || `https://logo.clearbit.com/${cleanTicker.replace('.NS', '').replace('.BO', '').toLowerCase()}.com`;
+  const weburl = finnhubProfile?.weburl || `https://www.${cleanTicker.replace('.NS', '').replace('.BO', '').toLowerCase()}.com`;
 
   return {
     name,
     ticker: cleanTicker,
     exchange,
-    industry: profile.industry || (isINR ? 'Electric Utilities' : 'Technology'),
-    sector: profile.sector || (isINR ? 'Utilities' : 'Technology'),
-    country: profile.country || (isINR ? 'India' : 'US'),
+    industry,
+    sector,
+    country,
     currency,
     currentPrice,
     high52Week,
     low52Week,
-    logo: `https://logo.clearbit.com/${cleanTicker.replace('.NS', '').replace('.BO', '').toLowerCase()}.com`,
-    weburl: profile.website || `https://www.${cleanTicker.replace('.NS', '').replace('.BO', '').toLowerCase()}.com`,
+    logo,
+    weburl,
     marketCap: mktCap,
   };
 }
@@ -532,101 +600,110 @@ export async function fetchFinancialMetrics(ticker: string): Promise<FinancialMe
       bookValuePerShare: null,
     };
   }
+
+  const quote = await fetchQuote(ticker);
   const gFinance = await scrapeGoogleFinance(ticker);
   
-  const isINR = cleanTicker.endsWith('.NS') || cleanTicker.endsWith('.BO') || (gFinance?.currency === 'INR');
+  const isINR = cleanTicker.endsWith('.NS') || cleanTicker.endsWith('.BO') || (quote?.currency === 'INR') || (gFinance?.currency === 'INR');
   
   let screenerData: any = null;
   let saData: any = null;
+  let finnhubMetrics: any = null;
   
   if (isINR) {
     screenerData = await scrapeScreener(ticker);
   } else {
     saData = await scrapeStockAnalysis(ticker);
+    if (process.env.FINNHUB_API_KEY) {
+      try {
+        const cleanSym = cleanTicker.split('.')[0];
+        const res = await axios.get(`https://finnhub.io/api/v1/stock/metric?symbol=${cleanSym}&metric=all&token=${process.env.FINNHUB_API_KEY}`, { timeout: 5000 });
+        finnhubMetrics = res.data?.metric;
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
-  const quote = await fetchQuote(ticker);
-  const summary = await fetchQuoteSummary(ticker, 'financialData,defaultKeyStatistics');
-  const stats = summary?.defaultKeyStatistics || {};
-  const finData = summary?.financialData || {};
-
-  const currency = gFinance?.currency || quote?.currency || (isINR ? 'INR' : 'USD');
-  const price = gFinance?.price || quote?.regularMarketPrice || quote?.regularMarketPreviousClose || 150;
+  const currency = quote?.currency || gFinance?.currency || (isINR ? 'INR' : 'USD');
+  const price = quote?.regularMarketPrice || gFinance?.price || 150;
   
   // Extract P/E
   let pe: number | null = null;
-  if (gFinance?.stats?.['P/E ratio'] || gFinance?.stats?.['P/E Ratio']) {
-    pe = parseFloat((gFinance.stats['P/E ratio'] || gFinance.stats['P/E Ratio']).replace(/[^\d.]/g, ''));
+  if (saData?.['PE Ratio']) {
+    pe = parseFloat(saData['PE Ratio'].replace(/[^\d.]/g, ''));
+  }
+  if (!pe && finnhubMetrics?.peTTM) {
+    pe = Number(finnhubMetrics.peTTM);
   }
   if (!pe && screenerData?.ratios?.['Stock P/E']) {
     pe = parseFloat(screenerData.ratios['Stock P/E'].replace(/[^\d.]/g, ''));
   }
-  if (!pe && saData?.['PE Ratio']) {
-    pe = parseFloat(saData['PE Ratio'].replace(/[^\d.]/g, ''));
-  }
-  if (!pe) {
-    pe = quote?.trailingPE || stats.trailingPE?.raw || null;
+  if (!pe && (gFinance?.stats?.['P/E ratio'] || gFinance?.stats?.['P/E Ratio'])) {
+    pe = parseFloat((gFinance.stats['P/E ratio'] || gFinance.stats['P/E Ratio']).replace(/[^\d.]/g, ''));
   }
 
   // Extract Dividend Yield
   let divYield: number | null = null;
-  if (gFinance?.stats?.['Dividend'] || gFinance?.stats?.['Div yield'] || gFinance?.stats?.['Dividend yield']) {
-    const divVal = gFinance.stats['Dividend'] || gFinance.stats['Div yield'] || gFinance.stats['Dividend yield'];
-    divYield = parseFloat(divVal.replace(/[^\d.]/g, ''));
+  if (saData?.['Dividend Yield']) {
+    divYield = parseFloat(saData['Dividend Yield'].replace(/[^\d.]/g, ''));
+  }
+  if (divYield === null && finnhubMetrics?.dividendYieldIndicatedAnnual) {
+    divYield = Number(finnhubMetrics.dividendYieldIndicatedAnnual);
   }
   if (divYield === null && screenerData?.ratios?.['Dividend Yield']) {
     divYield = parseFloat(screenerData.ratios['Dividend Yield'].replace(/[^\d.]/g, ''));
   }
-  if (divYield === null && saData?.['Dividend Yield']) {
-    divYield = parseFloat(saData['Dividend Yield'].replace(/[^\d.]/g, ''));
+  if (divYield === null && (gFinance?.stats?.['Dividend'] || gFinance?.stats?.['Div yield'] || gFinance?.stats?.['Dividend yield'])) {
+    const divVal = gFinance.stats['Dividend'] || gFinance.stats['Div yield'] || gFinance.stats['Dividend yield'];
+    divYield = parseFloat(divVal.replace(/[^\d.]/g, ''));
   }
-  if (divYield === null) {
-    divYield = quote?.trailingAnnualDividendYield ? quote.trailingAnnualDividendYield * 100 : (stats.dividendYield?.raw ? stats.dividendYield.raw * 100 : 0);
-  }
+  if (divYield === null) divYield = 0;
 
   // Extract EPS
   let eps: number | null = null;
-  if (gFinance?.stats?.['EPS']) {
-    eps = parseFloat(gFinance.stats['EPS'].replace(/[^\d.]/g, ''));
-  }
-  if (!eps && saData?.['Earnings Per Share (EPS)']) {
+  if (saData?.['Earnings Per Share (EPS)']) {
     eps = parseFloat(saData['Earnings Per Share (EPS)'].replace(/[^\d.-]/g, ''));
   }
-  if (!eps && quote?.epsTrailingTwelveMonths) {
-    eps = quote.epsTrailingTwelveMonths || stats.trailingEps?.raw || null;
+  if (!eps && finnhubMetrics?.epsTTM) {
+    eps = Number(finnhubMetrics.epsTTM);
   }
-  if (!eps && pe && price) {
+  if (!eps && gFinance?.stats?.['EPS']) {
+    eps = parseFloat(gFinance.stats['EPS'].replace(/[^\d.-]/g, ''));
+  }
+  if (!eps && pe && price && pe > 0) {
     eps = price / pe;
   }
   if (!eps) eps = isINR ? 11.7 : 5.5;
 
   // P/B ratio
   let pb: number | null = null;
-  if (screenerData?.ratios?.['Book Value']) {
+  if (saData?.['PB Ratio']) {
+    pb = parseFloat(saData['PB Ratio'].replace(/[^\d.]/g, ''));
+  }
+  if (!pb && finnhubMetrics?.pbAnnual) {
+    pb = Number(finnhubMetrics.pbAnnual);
+  }
+  if (!pb && screenerData?.ratios?.['Book Value']) {
     const bookVal = parseFloat(screenerData.ratios['Book Value'].replace(/[^\d.]/g, ''));
     if (bookVal > 0) {
       pb = price / bookVal;
     }
   }
-  if (!pb && saData?.['PB Ratio']) {
-    pb = parseFloat(saData['PB Ratio'].replace(/[^\d.]/g, ''));
-  }
-  if (!pb) {
-    pb = quote?.priceToBook || stats.priceToBook?.raw || (isINR ? 3.1 : 2.5);
-  }
+  if (!pb) pb = isINR ? 3.1 : 2.5;
 
   // Derive ROE: ROE = P/B / P/E * 100
   let roe: number | null = null;
-  if (screenerData?.ratios?.['ROE']) {
-    roe = parseFloat(screenerData.ratios['ROE'].replace(/[^\d.]/g, ''));
-  }
-  if (!roe && saData?.['Return on Equity (ROE)']) {
+  if (saData?.['Return on Equity (ROE)']) {
     roe = parseFloat(saData['Return on Equity (ROE)'].replace(/[^\d.-]/g, ''));
   }
-  if (!roe) {
-    roe = finData.returnOnEquity?.raw ? finData.returnOnEquity.raw * 100 : null;
+  if (!roe && finnhubMetrics?.roeTTM) {
+    roe = Number(finnhubMetrics.roeTTM);
   }
-  if (!roe && pe && pb) {
+  if (!roe && screenerData?.ratios?.['ROE']) {
+    roe = parseFloat(screenerData.ratios['ROE'].replace(/[^\d.]/g, ''));
+  }
+  if (!roe && pe && pb && pe > 0) {
     roe = (pb / pe) * 100;
   }
   if (!roe) roe = isINR ? 10.2 : 15.0;
@@ -635,7 +712,11 @@ export async function fetchFinancialMetrics(ticker: string): Promise<FinancialMe
   let debtToEquity = 0.35;
   const isUtility = cleanTicker.endsWith('.NS') || cleanTicker.includes('POWER') || cleanTicker.includes('INFRA');
   
-  if (isINR && screenerData?.balanceSheet) {
+  if (saData?.['Debt / Equity']) {
+    debtToEquity = parseFloat(saData['Debt / Equity'].replace(/[^\d.-]/g, ''));
+  } else if (finnhubMetrics?.['totalDebt/totalEquityQuarterly'] !== undefined) {
+    debtToEquity = Number(finnhubMetrics['totalDebt/totalEquityQuarterly']) / 100;
+  } else if (isINR && screenerData?.balanceSheet) {
     const borrowingsKey = Object.keys(screenerData.balanceSheet).find(k => k.startsWith('Borrowings'));
     const borrowings = borrowingsKey ? screenerData.balanceSheet[borrowingsKey] : 0;
     const capitalKey = Object.keys(screenerData.balanceSheet).find(k => k.startsWith('Equity Capital') || k.startsWith('Share Capital'));
@@ -648,28 +729,24 @@ export async function fetchFinancialMetrics(ticker: string): Promise<FinancialMe
     } else {
       debtToEquity = isUtility ? 0.85 : 0.35;
     }
-  } else if (saData?.['Debt / Equity']) {
-    debtToEquity = parseFloat(saData['Debt / Equity'].replace(/[^\d.-]/g, ''));
   } else {
-    debtToEquity = finData.debtToEquity?.raw 
-      ? finData.debtToEquity.raw / 100 
-      : (isUtility ? 0.85 : 0.35);
+    debtToEquity = isUtility ? 0.85 : 0.35;
   }
 
   // Current Ratio
   let currentRatio = isUtility ? 1.2 : 1.85;
   if (saData?.['Current Ratio']) {
     currentRatio = parseFloat(saData['Current Ratio'].replace(/[^\d.-]/g, ''));
-  } else {
-    currentRatio = finData.currentRatio?.raw || (isUtility ? 1.2 : 1.85);
+  } else if (finnhubMetrics?.currentRatioQuarterly) {
+    currentRatio = Number(finnhubMetrics.currentRatioQuarterly);
   }
 
   // Profit Margin
   let profitMargin = isUtility ? 9.4 : 15.0;
   if (saData?.['Profit Margin']) {
     profitMargin = parseFloat(saData['Profit Margin'].replace(/[^\d.-]/g, ''));
-  } else {
-    profitMargin = finData.profitMargins?.raw ? finData.profitMargins.raw * 100 : (isUtility ? 9.4 : 15.0);
+  } else if (finnhubMetrics?.netProfitMarginTTM) {
+    profitMargin = Number(finnhubMetrics.netProfitMarginTTM);
   }
 
   // Free Cash Flow
@@ -681,7 +758,7 @@ export async function fetchFinancialMetrics(ticker: string): Promise<FinancialMe
     if (fcfValStr.toLowerCase().includes('m')) fcfVal *= 1e6;
     if (fcfValStr.toLowerCase().includes('t')) fcfVal *= 1e12;
     
-    let shares = stats.sharesOutstanding?.raw || 1e9;
+    let shares = 1e9;
     if (saData?.['Shares Outstanding']) {
       const shStr = saData['Shares Outstanding'];
       let shVal = parseFloat(shStr.replace(/[^\d.-]/g, ''));
@@ -693,22 +770,27 @@ export async function fetchFinancialMetrics(ticker: string): Promise<FinancialMe
     if (shares > 0) {
       freeCashFlow = fcfVal / shares;
     }
-  } else {
-    const shares = stats.sharesOutstanding?.raw || 1e9;
-    const fcf = finData.freeCashflow?.raw || 0;
-    freeCashFlow = fcf ? fcf / shares : (isUtility ? 3.0 : 4.5);
+  } else if (finnhubMetrics?.freeCashFlowTTM) {
+    freeCashFlow = Number(finnhubMetrics.freeCashFlowTTM);
   }
 
-  const mktCap = gFinance 
-    ? parseMarketCap(gFinance.stats?.['Mkt. cap'] || gFinance.stats?.['Mkt cap'], currency === 'INR') 
-    : (quote?.marketCap || 1e11);
+  const mktCapVal = saData?.['Market Cap'] || (gFinance?.stats?.['Mkt. cap'] || gFinance?.stats?.['Mkt cap']) || screenerData?.ratios?.['Market Cap'];
+  let mktCap = mktCapVal 
+    ? parseMarketCap(mktCapVal, currency === 'INR') 
+    : 0;
+  if (!mktCap && finnhubMetrics?.marketCapitalization) {
+    mktCap = finnhubMetrics.marketCapitalization * 1e6;
+  }
+  if (!mktCap) mktCap = isINR ? 1e11 : 1e11;
 
   // Book Value Per Share
   let bookValuePerShare = pb ? price / pb : 45;
-  if (screenerData?.ratios?.['Book Value']) {
-    bookValuePerShare = parseFloat(screenerData.ratios['Book Value'].replace(/[^\d.]/g, ''));
-  } else if (saData?.['Book Value Per Share']) {
+  if (saData?.['Book Value Per Share']) {
     bookValuePerShare = parseFloat(saData['Book Value Per Share'].replace(/[^\d.-]/g, ''));
+  } else if (screenerData?.ratios?.['Book Value']) {
+    bookValuePerShare = parseFloat(screenerData.ratios['Book Value'].replace(/[^\d.]/g, ''));
+  } else if (finnhubMetrics?.bookValuePerShareAnnual) {
+    bookValuePerShare = Number(finnhubMetrics.bookValuePerShareAnnual);
   }
 
   return {
@@ -720,7 +802,7 @@ export async function fetchFinancialMetrics(ticker: string): Promise<FinancialMe
     currentRatio,
     freeCashFlow,
     profitMargin,
-    revenueGrowth: stats.revenueGrowth?.raw || 0.08,
+    revenueGrowth: finnhubMetrics?.revenueGrowth3Y || 0.08,
     dividendYield: divYield || null,
     marketCap: mktCap,
     bookValuePerShare,

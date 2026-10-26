@@ -61,12 +61,10 @@ export async function runInvestmentAnalysis(
   onProgress?.('analyzing', 'Running fundamental, sentiment, geopolitics & valuation analysis...');
 
   try {
-    const [fundResult, sentResult, geoResult, valResult] = await Promise.all([
-      safeRun('Fundamentals', () => fundamentalsNode(state)),
-      safeRun('Sentiment', () => sentimentNode(state)),
-      safeRun('Geopolitics', () => geopoliticsNode(state)),
-      safeRun('Valuation', () => valuationNode(state)),
-    ]);
+    const fundResult = await safeRun('Fundamentals', () => fundamentalsNode(state));
+    const sentResult = await safeRun('Sentiment', () => sentimentNode(state));
+    const geoResult = await safeRun('Geopolitics', () => geopoliticsNode(state));
+    const valResult = await safeRun('Valuation', () => valuationNode(state));
 
     // Merge all analyst outputs into state
     state = {

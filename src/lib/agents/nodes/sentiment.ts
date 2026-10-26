@@ -73,13 +73,34 @@ export async function sentimentNode(state: AgentState): Promise<Partial<AgentSta
       (n) => `- ${n.headline} (${n.source}, sentiment: ${n.sentiment > 0 ? 'positive' : n.sentiment < 0 ? 'negative' : 'neutral'})`
     ).join('\n');
 
-    const searchContext = searchResults.slice(0, 3).map(
-      (s) => `- ${s.title}: ${s.content.slice(0, 200)}`
-    ).join('\n');
+    const searchContext = searchResults
+      .filter((s) => s.content.trim().length > 0)
+      .slice(0, 5)
+      .map((s, index) => {
+        const passage = s.content
+          .split(/\r?\n/)
+          .map((line) => line.trim())
+          .filter(
+            (line) =>
+              line.length > 0 &&
+              !/^(watch live|watch now|join pro|livestream|thumbnail|menu|unlock value)$/i.test(line)
+          )
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .slice(0, 1200);
+
+        return [
+          `[S${index + 1}] ${s.title}`,
+          `URL: ${s.url}`,
+          `Evidence: ${passage}`,
+        ].join("\n");
+      })
+      .join("\n\n");
 
     const prompt = `You are analyzing market sentiment through the lens of Benjamin Graham's "Mr. Market" allegory.
 
 Company: ${name} (${ticker})
+Supplied price (${company?.currency || 'unknown currency'}): ${company && Number.isFinite(company.currentPrice) && company.currentPrice > 0 ? company.currentPrice : 'Unavailable'}
 Current Sentiment Score: ${sentimentScore}/100 (${overallSentiment})
 
 Recent News:
@@ -97,7 +118,15 @@ Provide a Mr. Market analysis (3-4 paragraphs):
 3. What would Graham advise: take advantage of Mr. Market's mood or wait?
 4. Key behavioral biases visible in current market sentiment.
 
-Frame everything through Graham's principle: "The investor's chief problem — and his worst enemy — is likely to be himself."`;
+Frame everything through Graham's principle: "The investor's chief problem — and his worst enemy — is likely to be himself."
+
+Use only supplied evidence for factual claims.
+Do not infer a current price from a daily trading range.
+If the supplied price is unavailable, omit current-price claims.
+Do not assert cloud growth, market leadership, or other business
+performance without supporting evidence.
+Cite source IDs such as [S1] for search-based claims.
+Clearly distinguish opinions and hypothetical scenarios from facts.`;
 
     const response = await llm.invoke(prompt);
     analysis = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);

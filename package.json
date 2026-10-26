@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:trace": "export $(grep -v '^#' .env.local 2>/dev/null | grep -v '^$' | xargs) && NODE_OPTIONS=\"--import dd-trace/initialize.mjs\" next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -21,6 +22,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "dd-trace": "^6.21.0",
     "langchain": "^0.3.37",
     "lucide-react": "^1.21.0",
     "next": "16.2.9",

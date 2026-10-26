@@ -29,6 +29,12 @@ interface ProviderConfig {
  * on hosting platforms like Vercel when using a Groq key.
  */
 function detectProvider(apiKey: string): ProviderConfig {
+  if (apiKey.startsWith('AQ.') || apiKey.startsWith('AIza')) {
+    return {
+      baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai',
+      defaultModel: 'gemini-3.5-flash-lite',
+    };
+  }
   if (apiKey.startsWith('gsk_')) {
     return {
       baseURL: 'https://api.groq.com/openai/v1',
@@ -86,6 +92,7 @@ export function createLLM(
     modelName: model,
     temperature: opts.temperature ?? 0.3,
     maxTokens: opts.maxTokens ?? 1200,
+    maxRetries: 2,
     configuration: baseURL ? { baseURL } : undefined,
   });
 }

@@ -3,6 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Ensure server-side packages are not bundled into the client
   serverExternalPackages: [
+    "dd-trace",
+    "openai",
     "@langchain/core",
     "@langchain/openai",
     "@langchain/langgraph",

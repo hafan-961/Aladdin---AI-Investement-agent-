@@ -1,5 +1,14 @@
 # 🧞 Aladdin — Session Changes & Implementation Summary
 
+## Grounding follow-up
+
+- Valuation prompts now require supplied calculation assumptions, flag unexplained anomalous inputs, and avoid invented scenario narratives or probabilities.
+- Fundamentals prompts preserve the supplied checklist thresholds and require earnings history before assessing earnings stability.
+- Sentiment prompts preserve source dates and measurement periods, distinguish source scales, retain headline qualifiers, and label synthetic social inputs and the derived demo score.
+- These are generation safeguards. Their effectiveness must be checked on newly generated reports with the same evaluation rubric; no accuracy improvement is claimed here.
+- Datadog evaluator definitions remain in the Datadog account and are not deployed by this code commit.
+- Local environment files and credentials must not be committed. Configure `DD_LLMOBS_ENABLED`, `DD_LLMOBS_ML_APP`, `DD_LLMOBS_AGENTLESS_ENABLED`, `DD_SITE`, `DD_API_KEY`, `DD_ENV`, `DD_SERVICE`, and optionally `DD_TRACE_STARTUP_LOGS` locally. Initialize the tracer before importing application modules.
+
 This document provides a complete chronological and technical breakdown of all modifications, bug fixes, observability integrations, and provider migrations performed during this session.
 
 ---

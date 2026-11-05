@@ -82,7 +82,22 @@ Provide a concise fundamental analysis (4-5 paragraphs) covering:
 4. Key risks from a fundamentals perspective
 5. Whether this meets Graham's standard for a defensive or enterprising investor
 
-Use concrete numbers. Reference Graham's concepts like "earnings stability", "adequate size", and "financial condition".`;
+Use concrete numbers. Reference Graham's concepts like "earnings stability", "adequate size", and "financial condition".
+
+Grounding requirements:
+- Base factual claims only on the supplied metrics and checklist results.
+- Preserve the supplied checklist thresholds exactly. Do not substitute other
+  familiar P/E or P/B limits or present this checklist as a universal historical standard.
+- Assess earnings stability only when historical earnings are supplied in this
+  prompt. Otherwise state that earnings stability cannot be established from
+  the available snapshot.
+- Do not infer company size, an economic moat, market leadership, or management
+  quality from financial ratios alone. State when the required evidence is absent.
+- If revenue growth or another figure appears anomalous, flag it for source and
+  unit verification. Do not invent explanations involving compounding,
+  acquisitions, AI growth, or accounting adjustments.
+- Clearly separate interpretations and hypothetical risks from factual claims.
+  Do not treat supplied or computed figures as independently verified data.`;
 
     const response = await llm.invoke(prompt);
     analysis = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);

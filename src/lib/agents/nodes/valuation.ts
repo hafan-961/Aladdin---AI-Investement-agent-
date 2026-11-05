@@ -97,7 +97,22 @@ Provide a valuation analysis (3-4 paragraphs):
 3. Evaluate the Margin of Safety — does it meet Graham's minimum 30% threshold?
 4. Present the risk-reward asymmetry across bull/base/bear scenarios
 
-Reference Graham's principle: "The margin of safety is always dependent on the price paid."`;
+Reference Graham's principle: "The margin of safety is always dependent on the price paid."
+
+Grounding requirements:
+- Base factual claims on the supplied inputs and preserve their values and units.
+- Do not invent causes for unusual financial figures. If a value appears anomalous,
+  state that its source, units, and cause require verification.
+- Describe calculation details and DCF assumptions only when their actual values
+  are supplied. Otherwise state that those details were not provided; do not
+  describe unspecified discount rates or terminal growth rates as conservative.
+- Treat the 30% threshold as this task's supplied screening rule, without adding
+  unsupported historical claims about Graham's standards or model applicability.
+- Do not invent business narratives explaining the supplied scenario prices.
+  Label any hypothetical interpretation explicitly and keep its factual premises grounded.
+- Compare the supplied bull, base, and bear prices with the current price. Do not
+  assert scenario probabilities or favorable/unfavorable expected returns without
+  supplied probabilities, and explain any limitations in the risk-reward assessment.`;
 
     const response = await llm.invoke(prompt);
     analysis = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);

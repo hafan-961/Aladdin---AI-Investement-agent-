@@ -101,7 +101,7 @@ export async function sentimentNode(state: AgentState): Promise<Partial<AgentSta
 
 Company: ${name} (${ticker})
 Supplied price (${company?.currency || 'unknown currency'}): ${company && Number.isFinite(company.currentPrice) && company.currentPrice > 0 ? company.currentPrice : 'Unavailable'}
-Current Sentiment Score: ${sentimentScore}/100 (${overallSentiment})
+Current Sentiment Score (demo estimate; includes synthetic social inputs): ${sentimentScore}/100 (${overallSentiment})
 
 Recent News:
 ${newsContext || 'No recent news available'}
@@ -109,7 +109,7 @@ ${newsContext || 'No recent news available'}
 Social Media/Search Insights:
 ${searchContext || 'Limited social data available'}
 
-Social Mentions:
+Social Mentions (synthetic demo data, not observed platform measurements):
 ${socialMentions.map(s => `- ${s.platform}: sentiment ${(s.sentiment * 100).toFixed(0)}/100, volume: ${s.volume}`).join('\n')}
 
 Provide a Mr. Market analysis (3-4 paragraphs):
@@ -126,7 +126,20 @@ If the supplied price is unavailable, omit current-price claims.
 Do not assert cloud growth, market leadership, or other business
 performance without supporting evidence.
 Cite source IDs such as [S1] for search-based claims.
-Clearly distinguish opinions and hypothetical scenarios from facts.`;
+Clearly distinguish opinions and hypothetical scenarios from facts.
+Preserve dates and measurement periods from source statistics. Do not present
+historical hedge-fund holdings as current institutional backing.
+Keep each source's sentiment scale, platform, and observation period distinct;
+do not combine source mention counts with unrelated sentiment scores.
+Synthetic social inputs and the demo score are illustrative assumptions only.
+Do not present them as evidence of actual investor activity or market sentiment.
+Mention volume alone does not establish herding, confirmation bias, investor
+motives, or speculative behavior. Describe these only as possible interpretations
+and explain the evidence limitations.
+News headlines support only what they state, including qualifiers such as
+"may" or "could"; do not turn them into confirmed business-performance claims.
+Do not describe the supplied price as cheap, expensive, or offering a margin
+of safety without supplied valuation evidence.`;
 
     const response = await llm.invoke(prompt);
     analysis = typeof response.content === 'string' ? response.content : JSON.stringify(response.content);
